@@ -20,21 +20,21 @@ public class PropertyServiceImplements implements PropertyService {
     @Value("${custom.mongodb.url}")
     private String mongoUrl;
 
-    @Transactional
+    
     @Override
     public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String databaseName, String collectionName, String uniqueFieldName) {
         MongoTemplate customMongoTemplate = getMongoTemplateForDatabase(databaseName);
         upsertProperty(customMongoTemplate, dynamicPropertyDetails, collectionName, uniqueFieldName,dynamicPropertyDetails.getModifiedDate());
         return "saved";
     }
-    @Transactional
+    
     @Override
     public String saveProperty(ServerConfigDetails serverConfigDetails, String databaseName, String collectionName,String uniqueFieldName) {
         MongoTemplate customMongoTemplate = getMongoTemplateForDatabase(databaseName);
         upsertProperty(customMongoTemplate, serverConfigDetails, collectionName, uniqueFieldName,serverConfigDetails.getModifiedDate());
         return "saved";
     }
-    @Transactional
+  
     @Override
     public String saveProperty(SprPropertyDetails sprPropertyDetails, String databaseName, String collectionName,String uniqueFieldName) {
         MongoTemplate customMongoTemplate = getMongoTemplateForDatabase(databaseName);
