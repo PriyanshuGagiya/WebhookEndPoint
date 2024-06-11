@@ -18,5 +18,6 @@ public class MongoConfig {
     public MongoTemplate getMongoTemplateForDatabase(String databaseName) {
         return mongoTemplatesCache.computeIfAbsent(databaseName, dbName ->
             new MongoTemplate(new SimpleMongoClientDatabaseFactory(mongoUrl + dbName)));
+           
     }
 }

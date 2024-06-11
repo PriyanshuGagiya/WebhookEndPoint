@@ -4,7 +4,6 @@ import com.webhook.dynamicproperty.config.MongoConfig;
 import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -18,7 +17,6 @@ public class PropertyServiceImplements implements PropertyService {
 
     private final MongoConfig mongoConfig;
 
-    @Autowired
     public PropertyServiceImplements(MongoConfig mongoConfig) {
         this.mongoConfig = mongoConfig;
     }
