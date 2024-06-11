@@ -201,14 +201,38 @@ public class WebhookController {
                                 }
                             }
                         }
-                        // System.out.println(sprPropertyDetails);
-                        // System.out.println(databaseName);
-                        // System.out.println(collectionName);
+                       
+                        
                        String res=propertyService.saveProperty(sprPropertyDetails, databaseName, collectionName, "key");
                           System.out.println(res);
 
                         
                     }
+                     // else if(collectionName.equals("partnerLevelConfig"))
+                        // {
+                            
+                        //     PartnerLevelConfigDetails partnerLevelConfigDetails = new PartnerLevelConfigDetails();
+                        //     partnerLevelConfigDetails.setAuthorName(commit.get("author").get("name").asText());
+                        //     partnerLevelConfigDetails.setAuthorEmail(commit.get("author").get("email").asText());
+                        //     partnerLevelConfigDetails.setModifiedDate(commitTime);
+                        //     String[] contentSplit=content.split("\n");
+                            
+                        //     for(String line:contentSplit)
+                        //     {
+                        //         String[] keyValue=line.split(":");
+                        //         if(keyValue.length==2)
+                        //         {
+                        //             String key=keyValue[0].trim();
+                        //             String value=keyValue[1].trim();
+                        //             if(key.equals("config"))
+                        //             {
+                        //                 partnerLevelConfigDetails.setConfig(value);
+                        //             }
+                        //         }
+                        //     }
+                        //     String res=propertyService.saveProperty(partnerLevelConfigDetails, databaseName, collectionName, "config");
+                        //     System.out.println(res);
+                        // }
 
                 }
                 for (JsonNode file : modified) 
