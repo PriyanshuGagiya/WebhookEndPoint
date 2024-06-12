@@ -1,0 +1,18 @@
+
+spring:
+  application:
+    name: dynamicproperty
+  data:
+    mongodb:
+      database: dynamicproperty
+      port: '27017'
+      host: localhost
+  profiles:
+    active: prod1
+server:
+  port: '8080'
+custom:
+  mongodb:
+    url: mongodb://localhost:27017/
+
+
