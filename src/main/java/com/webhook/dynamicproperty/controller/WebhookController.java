@@ -29,7 +29,8 @@ import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/webhook")
-public class WebhookController {
+public class WebhookController 
+{
 
     private static final Logger logger = LoggerFactory.getLogger(WebhookController.class);
 
@@ -56,9 +57,11 @@ public class WebhookController {
     @PostMapping("/github")
     public void gitWebhook(@RequestBody JsonNode jsonNode) {
         try {
-            System.out.println(jsonNode);
+            // System.out.println(jsonNode);
             JsonNode commits = jsonNode.get("commits");
+            
             for (JsonNode commit : commits) {
+                //System.out.println(commit.get("id").asText());
                 processFiles(commit.get("author").get("name").asText(),commit.get("author").get("email").asText(), commit.get("added"), commit.get("id").asText(), commit.get("timestamp").asText());
                 processFiles(commit.get("author").get("name").asText(),commit.get("author").get("email").asText(), commit.get("modified"), commit.get("id").asText(),
                         commit.get("timestamp").asText());
@@ -68,7 +71,8 @@ public class WebhookController {
         }
     }
 
-    private void processFiles(String AuthorName,String AuthorEmail, JsonNode files, String commitId, String commitTime) {
+    private void processFiles(String AuthorName,String AuthorEmail, JsonNode files, String commitId, String commitTime) 
+    {
         for (JsonNode file : files) 
         {
             String filePath = file.asText();
@@ -83,6 +87,10 @@ public class WebhookController {
                 continue;
             }
             String databaseName = filesPathSplit[2];
+            if(!databaseName.equals(activeProfile))
+            {
+                continue;
+            }
             String collectionName = filesPathSplit[1];
             String url = githubDownloadUrl + commitId + "/" + filePath;
 
@@ -152,7 +160,7 @@ public class WebhookController {
     }
 
     private void handleDynamicProperty(String AuthorName, String AuthorEmail, String commitTime, String databaseName,
-            String collectionName, JsonNode content) {
+        String collectionName, JsonNode content) {
         DynamicPropertyDetails dynamicPropertyDetails = new DynamicPropertyDetails();
         dynamicPropertyDetails.setAuthorName(AuthorName);
         dynamicPropertyDetails.setAuthorEmail(AuthorEmail);
@@ -162,11 +170,11 @@ public class WebhookController {
         dynamicPropertyDetails.setValue(content.get("value").asText());
         dynamicPropertyDetails.setReason(content.get("reason").asText());
         dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
-        propertyService.saveProperty(dynamicPropertyDetails, databaseName, collectionName, "key");
+        propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key");
     }
 
     private void handleServerConfig(String AuthorName, String AuthorEmail, String commitTime, String databaseName,
-            String collectionName, JsonNode content) {
+        String collectionName, JsonNode content) {
         ServerConfigDetails serverConfigDetails = new ServerConfigDetails();
         serverConfigDetails.setAuthorName(AuthorName);
         serverConfigDetails.setAuthorEmail(AuthorEmail);
@@ -179,11 +187,11 @@ public class WebhookController {
         serverConfigDetails.setServerType(content.get("serverType").asText());
         serverConfigDetails.setName(content.get("name").asText());
         serverConfigDetails.set_class(content.get("_class").asText());
-        propertyService.saveProperty(serverConfigDetails, databaseName, collectionName, "name");
+        propertyService.saveProperty(serverConfigDetails, collectionName, "name");
     }
 
     private void handleSprProperty(String AuthorName, String AuthorEmail, String commitTime, String databaseName,
-            String collectionName, JsonNode content) {
+        String collectionName, JsonNode content) {
         SprPropertyDetails sprPropertyDetails = new SprPropertyDetails();
         sprPropertyDetails.setAuthorName(AuthorName);
         sprPropertyDetails.setAuthorEmail(AuthorEmail);
@@ -193,7 +201,7 @@ public class WebhookController {
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
 
-        propertyService.saveProperty(sprPropertyDetails, databaseName, collectionName, "key");
+        propertyService.saveProperty(sprPropertyDetails, collectionName, "key");
     }
 
    
@@ -207,7 +215,7 @@ public class WebhookController {
         partnerLevelConfigBean.setConfig(config);
         partnerLevelConfigBean.set_class(content.get("_class").asText());
     
-        propertyService.saveProperty(partnerLevelConfigBean, databaseName, collectionName, List.of("config.module", "config.type", "config.configClassName"));
+        propertyService.saveProperty(partnerLevelConfigBean, collectionName, List.of("config.module", "config.type", "config.configClassName"));
     }
     
     private Map<String, Object> convertJsonNodeToMap(JsonNode jsonNode) {

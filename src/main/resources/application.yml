@@ -1,10 +1,9 @@
-
 spring:
   application:
     name: dynamicproperty
   data:
     mongodb:
-      database: dynamicproperty
+      database: prod1
       port: '27017'
       host: localhost
   profiles:
@@ -13,6 +12,6 @@ server:
   port: '8080'
 custom:
   mongodb:
-    url: mongodb://localhost:27017/
+    url: mongodb://localhost:27017/prod1
 
 

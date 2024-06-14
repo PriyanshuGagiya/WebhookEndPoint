@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.time.OffsetDateTime;
 
 @Service
 public class PropertyServiceImplements implements PropertyService {
@@ -24,37 +25,37 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     @Override
-    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String databaseName, String collectionName, String uniqueFieldName) {
-        return save(dynamicPropertyDetails, databaseName, collectionName, uniqueFieldName);
+    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName, String uniqueFieldName) {
+        return save(dynamicPropertyDetails, collectionName, uniqueFieldName);
     }
 
     @Override
-    public String saveProperty(ServerConfigDetails serverConfigDetails, String databaseName, String collectionName, String uniqueFieldName) {
-        return save(serverConfigDetails, databaseName, collectionName, uniqueFieldName);
+    public String saveProperty(ServerConfigDetails serverConfigDetails, String collectionName, String uniqueFieldName) {
+        return save(serverConfigDetails, collectionName, uniqueFieldName);
     }
 
     @Override
-    public String saveProperty(SprPropertyDetails sprPropertyDetails, String databaseName, String collectionName, String uniqueFieldName) {
-        return save(sprPropertyDetails, databaseName, collectionName, uniqueFieldName);
+    public String saveProperty(SprPropertyDetails sprPropertyDetails, String collectionName, String uniqueFieldName) {
+        return save(sprPropertyDetails, collectionName, uniqueFieldName);
+    }
+    @Override
+    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames) {
+        return save(partnerLevelConfigBeanDetails, collectionName, uniqueFieldNames);
     }
 
-    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String databaseName, String collectionName, List<String> uniqueFieldNames) {
-        return save(partnerLevelConfigBeanDetails, databaseName, collectionName, uniqueFieldNames);
-    }
-
-    private String save(Object property, String databaseName, String collectionName, String uniqueFieldName) {
-        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase(databaseName);
+    private String save(Object property, String collectionName, String uniqueFieldName) {
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
         upsertProperty(mongoTemplate, property, collectionName, uniqueFieldName, getModifiedDate(property));
         return "saved";
     }
 
-    private String save(Object property, String databaseName, String collectionName, List<String> uniqueFieldNames) {
-        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase(databaseName);
+    private String save(Object property, String collectionName, List<String> uniqueFieldNames) {
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
         upsertProperty(mongoTemplate, property, collectionName, uniqueFieldNames, getModifiedDate(property));
         return "saved";
     }
 
-    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, String modifiedDate) {
+    private  <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, String modifiedDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName)));
 
@@ -64,15 +65,17 @@ public class PropertyServiceImplements implements PropertyService {
         if (existingProperty == null) {
             // Set createdDate only when inserting a new document
             update.set("createdDate", modifiedDate);
+            mongoTemplate.upsert(query, update, collectionName);
         } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
             // Update modifiedDate only if the new one is greater
             update.set("modifiedDate", modifiedDate);
+            mongoTemplate.upsert(query, update, collectionName);
         }
 
-        mongoTemplate.upsert(query, update, collectionName);
+        
     }
 
-    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, String modifiedDate) {
+    private  <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, String modifiedDate) {
         Query query = new Query();
         Criteria criteria = new Criteria();
         for (String uniqueFieldName : uniqueFieldNames) {
@@ -86,12 +89,14 @@ public class PropertyServiceImplements implements PropertyService {
         if (existingProperty == null) 
         {
             update.set("createdDate", modifiedDate);
+            mongoTemplate.upsert(query, update, collectionName);
         } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) 
         {
             update.set("modifiedDate", modifiedDate);
+            mongoTemplate.upsert(query, update, collectionName);
         }
 
-        mongoTemplate.upsert(query, update, collectionName);
+        
     }
 
     private <T> Update createUpdateFromProperty(T property) {
@@ -147,7 +152,9 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     private boolean isModifiedDateGreater(String newModifiedDate, String existingModifiedDate) {
-       return newModifiedDate.compareTo(existingModifiedDate) > 0;
+        OffsetDateTime dateTime1 = OffsetDateTime.parse(newModifiedDate);
+        OffsetDateTime dateTime2 = OffsetDateTime.parse(existingModifiedDate);
+        return dateTime1.isAfter(dateTime2);
         
     }
 }

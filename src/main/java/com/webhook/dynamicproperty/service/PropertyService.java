@@ -9,8 +9,8 @@ import com.webhook.dynamicproperty.model.SprPropertyDetails;
 
 public interface PropertyService 
 {
-    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String databaseName, String collectionName, String uniqueFieldName);
-    public String saveProperty(SprPropertyDetails sprPropertyDetails, String databaseName, String collectionName, String uniqueFieldName);
-    public String saveProperty(ServerConfigDetails serverConfigDetails, String databaseName, String collectionName, String uniqueFieldName);
-    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String databaseName, String collectionName, List<String> uniqueFieldNames);
+    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails,  String collectionName, String uniqueFieldName);
+    public String saveProperty(SprPropertyDetails sprPropertyDetails, String collectionName, String uniqueFieldName);
+    public String saveProperty(ServerConfigDetails serverConfigDetails,  String collectionName, String uniqueFieldName);
+    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames);
 }
