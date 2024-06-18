@@ -6,7 +6,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
-
+import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
@@ -20,7 +20,7 @@ public class PartnerLevelConfigBeanDetails
     private Map<String, Object> config;
     private String _class;
     @CreatedDate
-    private String createdDate;
+    private LocalDateTime createdDate;
     @LastModifiedDate
-    private String modifiedDate;
+    private LocalDateTime modifiedDate;
 }

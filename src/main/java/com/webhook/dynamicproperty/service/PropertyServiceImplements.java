@@ -1,5 +1,6 @@
 
 package com.webhook.dynamicproperty.service;
+
 import com.webhook.dynamicproperty.config.MongoConfig;
 import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
@@ -13,7 +14,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Service
 public class PropertyServiceImplements implements PropertyService {
@@ -25,7 +26,8 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     @Override
-    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName, String uniqueFieldName) {
+    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName,
+            String uniqueFieldName) {
         return save(dynamicPropertyDetails, collectionName, uniqueFieldName);
     }
 
@@ -38,8 +40,10 @@ public class PropertyServiceImplements implements PropertyService {
     public String saveProperty(SprPropertyDetails sprPropertyDetails, String collectionName, String uniqueFieldName) {
         return save(sprPropertyDetails, collectionName, uniqueFieldName);
     }
+
     @Override
-    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames) {
+    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName,
+            List<String> uniqueFieldNames) {
         return save(partnerLevelConfigBeanDetails, collectionName, uniqueFieldNames);
     }
 
@@ -55,7 +59,9 @@ public class PropertyServiceImplements implements PropertyService {
         return "saved";
     }
 
-    private  <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, String modifiedDate) {
+    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName,
+            String uniqueFieldName, LocalDateTime modifiedDate) {
+
         Query query = new Query();
         query.addCriteria(Criteria.where(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName)));
 
@@ -72,10 +78,10 @@ public class PropertyServiceImplements implements PropertyService {
             mongoTemplate.upsert(query, update, collectionName);
         }
 
-        
     }
 
-    private  <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, String modifiedDate) {
+    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName,
+            List<String> uniqueFieldNames, LocalDateTime modifiedDate) {
         Query query = new Query();
         Criteria criteria = new Criteria();
         for (String uniqueFieldName : uniqueFieldNames) {
@@ -86,17 +92,16 @@ public class PropertyServiceImplements implements PropertyService {
         T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
 
         Update update = createUpdateFromProperty(property);
-        if (existingProperty == null) 
-        {
+        if (existingProperty == null) {
             update.set("createdDate", modifiedDate);
             mongoTemplate.upsert(query, update, collectionName);
-        } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) 
-        {
-            update.set("modifiedDate", modifiedDate);
+        } else {
+
+            criteria = criteria.and("modifiedDate").gt(modifiedDate);
+
             mongoTemplate.upsert(query, update, collectionName);
         }
 
-        
     }
 
     private <T> Update createUpdateFromProperty(T property) {
@@ -106,6 +111,7 @@ public class PropertyServiceImplements implements PropertyService {
             try {
                 Object value = field.get(property);
                 if (value != null) {
+
                     update.set(field.getName(), value);
                 }
             } catch (IllegalAccessException e) {
@@ -141,20 +147,17 @@ public class PropertyServiceImplements implements PropertyService {
         }
     }
 
-    private <T> String getModifiedDate(T property) {
+    private <T> LocalDateTime getModifiedDate(T property) {
         try {
             Field field = property.getClass().getDeclaredField("modifiedDate");
             field.setAccessible(true);
-            return (String) field.get(property);
+            return (LocalDateTime) field.get(property);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Error getting modified date", e);
         }
     }
 
-    private boolean isModifiedDateGreater(String newModifiedDate, String existingModifiedDate) {
-        OffsetDateTime dateTime1 = OffsetDateTime.parse(newModifiedDate);
-        OffsetDateTime dateTime2 = OffsetDateTime.parse(existingModifiedDate);
-        return dateTime1.isAfter(dateTime2);
-        
+    private boolean isModifiedDateGreater(LocalDateTime newModifiedDate, LocalDateTime existingModifiedDate) {
+        return newModifiedDate.isAfter(existingModifiedDate);
     }
 }
