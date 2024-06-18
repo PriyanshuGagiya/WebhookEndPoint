@@ -95,9 +95,7 @@ public class PropertyServiceImplements implements PropertyService {
         if (existingProperty == null) {
             update.set("createdDate", modifiedDate);
             mongoTemplate.upsert(query, update, collectionName);
-        } else {
-
-            criteria = criteria.and("modifiedDate").gt(modifiedDate);
+        } else if(isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
 
             mongoTemplate.upsert(query, update, collectionName);
         }
