@@ -1,18 +1,16 @@
-
+github:
+  token: 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
 spring:
   application:
     name: dynamicproperty
-  data:
-    mongodb:
-      database: prod1
-      port: '27017'
-      host: localhost
   profiles:
     active: prod1
 server:
   port: '8080'
 custom:
   mongodb:
-    url: mongodb://localhost:27017/prod1
+    url: mongodb+srv://priyanshu:soumik@sprinklr.emlaafp.mongodb.net/?retryWrites=true&w=majority
+    database: prod1
+
 
 
