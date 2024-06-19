@@ -1,4 +1,5 @@
-
+github:
+  token: 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
 spring:
   application:
     name: dynamicproperty
