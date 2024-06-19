@@ -1,4 +1,3 @@
-
 package com.webhook.dynamicproperty.service;
 
 import com.webhook.dynamicproperty.config.MongoConfig;
@@ -11,10 +10,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.time.LocalDateTime;
 
 @Service
 public class PropertyServiceImplements implements PropertyService {
@@ -26,8 +26,7 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     @Override
-    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName,
-            String uniqueFieldName) {
+    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName, String uniqueFieldName) {
         return save(dynamicPropertyDetails, collectionName, uniqueFieldName);
     }
 
@@ -42,63 +41,65 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     @Override
-    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName,
-            List<String> uniqueFieldNames) {
+    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames) {
         return save(partnerLevelConfigBeanDetails, collectionName, uniqueFieldNames);
     }
 
     private String save(Object property, String collectionName, String uniqueFieldName) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
         upsertProperty(mongoTemplate, property, collectionName, uniqueFieldName, getModifiedDate(property));
+        
         return "saved";
     }
 
     private String save(Object property, String collectionName, List<String> uniqueFieldNames) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
-        upsertProperty(mongoTemplate, property, collectionName, uniqueFieldNames, getModifiedDate(property));
+        synchronized (this) {
+            upsertProperty(mongoTemplate, property, collectionName, uniqueFieldNames, getModifiedDate(property));
+        }
         return "saved";
     }
 
-    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName,
-            String uniqueFieldName, LocalDateTime modifiedDate) {
-
+    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName)));
-
-        T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
-
         Update update = createUpdateFromProperty(property);
-        if (existingProperty == null) {
+        synchronized (this) 
+        {
+            T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
 
-            update.set("createdDate", modifiedDate);
-            mongoTemplate.upsert(query, update, collectionName);
-        } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
             
-            mongoTemplate.upsert(query, update, collectionName);
+            if (existingProperty == null) {
+                update.set("createdDate", modifiedDate);
+                mongoTemplate.upsert(query, update, collectionName);
+            } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
+                mongoTemplate.upsert(query, update, collectionName);
+            }
         }
-
     }
 
-    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName,
-            List<String> uniqueFieldNames, LocalDateTime modifiedDate) {
+    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDate) {
         Query query = new Query();
         Criteria criteria = new Criteria();
         for (String uniqueFieldName : uniqueFieldNames) {
             criteria = criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
         }
+        
         query.addCriteria(criteria);
 
-        T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
-
         Update update = createUpdateFromProperty(property);
-        if (existingProperty == null) {
-            update.set("createdDate", modifiedDate);
-            mongoTemplate.upsert(query, update, collectionName);
-        } else if(isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
+        synchronized (this) 
+        {
+            T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
 
-            mongoTemplate.upsert(query, update, collectionName);
+        
+            if (existingProperty == null) {
+                update.set("createdDate", modifiedDate);
+                mongoTemplate.upsert(query, update, collectionName);
+            } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
+                mongoTemplate.upsert(query, update, collectionName);
+            }
         }
-
     }
 
     private <T> Update createUpdateFromProperty(T property) {
@@ -108,7 +109,6 @@ public class PropertyServiceImplements implements PropertyService {
             try {
                 Object value = field.get(property);
                 if (value != null) {
-
                     update.set(field.getName(), value);
                 }
             } catch (IllegalAccessException e) {
