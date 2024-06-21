@@ -6,6 +6,7 @@ import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
 import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -47,59 +48,57 @@ public class PropertyServiceImplements implements PropertyService {
 
     private String save(Object property, String collectionName, String uniqueFieldName) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
-        upsertProperty(mongoTemplate, property, collectionName, uniqueFieldName, getModifiedDate(property));
+        findAndModify(mongoTemplate, property, collectionName, uniqueFieldName, getModifiedDate(property));
         
         return "saved";
     }
 
     private String save(Object property, String collectionName, List<String> uniqueFieldNames) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
-        synchronized (this) {
-            upsertProperty(mongoTemplate, property, collectionName, uniqueFieldNames, getModifiedDate(property));
-        }
+        findAndModify(mongoTemplate, property, collectionName, uniqueFieldNames, getModifiedDate(property));
         return "saved";
     }
 
-    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDate) {
+    private <T> void findAndModify(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDate) 
+    {
         Query query = new Query();
-        query.addCriteria(Criteria.where(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName)));
-        Update update = createUpdateFromProperty(property);
-        synchronized (this) 
-        {
-            T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
-
-            
-            if (existingProperty == null) {
-                update.set("createdDate", modifiedDate);
-                mongoTemplate.upsert(query, update, collectionName);
-            } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
-                mongoTemplate.upsert(query, update, collectionName);
-            }
-        }
+        Criteria criteria = Criteria.where(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
+        query.addCriteria(criteria);
+        Update update = createUpdateFromPropertyOninsert(property);
+        update.setOnInsert("createdDate", modifiedDate);
+        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
+        
+        query = new Query();
+        criteria= new Criteria();
+        criteria= criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
+        criteria= criteria.and("modifiedDate").lt(modifiedDate);
+        query.addCriteria(criteria);
+        update = createUpdateFromProperty(property);
+        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);
     }
 
-    private <T> void upsertProperty(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDate) {
+    private <T> void findAndModify(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDate) 
+    {
         Query query = new Query();
         Criteria criteria = new Criteria();
         for (String uniqueFieldName : uniqueFieldNames) {
             criteria = criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
         }
-        
         query.addCriteria(criteria);
+        Update update = createUpdateFromPropertyOninsert(property);
+        update.setOnInsert("createdDate", modifiedDate);
+        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
 
-        Update update = createUpdateFromProperty(property);
-        synchronized (this) 
-        {
-            T existingProperty = mongoTemplate.findOne(query, (Class<T>) property.getClass(), collectionName);
-
-        
-            if (existingProperty == null) {
-                update.set("createdDate", modifiedDate);
-                mongoTemplate.upsert(query, update, collectionName);
-            } else if (isModifiedDateGreater(modifiedDate, getModifiedDate(existingProperty))) {
-                mongoTemplate.upsert(query, update, collectionName);
-            }
+        query = new Query();
+        criteria = new Criteria();
+        for (String uniqueFieldName : uniqueFieldNames) {
+            criteria = criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
         }
+        criteria = criteria.and("modifiedDate").lt(modifiedDate);
+        query.addCriteria(criteria);
+        update = createUpdateFromProperty(property);
+        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);   
+       
     }
 
     private <T> Update createUpdateFromProperty(T property) {
@@ -110,6 +109,22 @@ public class PropertyServiceImplements implements PropertyService {
                 Object value = field.get(property);
                 if (value != null) {
                     update.set(field.getName(), value);
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Error accessing field value", e);
+            }
+        }
+        return update;
+    }
+
+    private <T> Update createUpdateFromPropertyOninsert(T property) {
+        Update update = new Update();
+        for (Field field : property.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(property);
+                if (value != null) {
+                    update.setOnInsert(field.getName(), value);
                 }
             } catch (IllegalAccessException e) {
                 throw new RuntimeException("Error accessing field value", e);
