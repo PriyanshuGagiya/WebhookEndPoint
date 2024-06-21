@@ -49,7 +49,7 @@ public class WebhookController
     @Value("${github.token}")
     private String githubToken;
 
-    @Value("${github.api.url:https://raw.githubusercontent.com/PriyanshuGagiya/DP/}")
+    @Value("${github.api.url}")
     private String githubDownloadUrl;
 
     public WebhookController(RestTemplate restTemplate, PropertyService propertyService) {

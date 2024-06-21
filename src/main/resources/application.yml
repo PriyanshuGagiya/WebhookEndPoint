@@ -1,5 +1,7 @@
 github:
-  token: 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
+  token: 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
+  api:
+    url: https://raw.githubusercontent.com/PriyanshuGagiya/DP/
 spring:
   application:
     name: dynamicproperty
@@ -9,7 +11,8 @@ server:
   port: '8080'
 custom:
   mongodb:
-    url: mongodb+srv://priyanshu:soumik@sprinklr.emlaafp.mongodb.net/?retryWrites=true&w=majority
+    # url: mongodb+srv://priyanshu:soumik@sprinklr.emlaafp.mongodb.net/?retryWrites=true&w=majority
+    url: mongodb://localhost:27017
     database: prod1
 
 

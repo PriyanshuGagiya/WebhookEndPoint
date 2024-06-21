@@ -13,17 +13,16 @@ public class MongoConfig {
     @Value("${custom.mongodb.url}")
     private String mongoUrl;
 
+    @Value("${spring.profiles.active}")
+    private String dbName;
+
     public MongoTemplate getMongoTemplateForDatabase() {
         ConnectionString connectionString = new ConnectionString(mongoUrl);
         MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
                 .applyConnectionString(connectionString)
                 .build();
 
-        return new MongoTemplate(MongoClients.create(mongoClientSettings), "prod1"); // "prod1" is your database name
-    }
-
-    public String getMongoUrl() {
-        return mongoUrl;
+        return new MongoTemplate(MongoClients.create(mongoClientSettings), dbName); 
     }
 
 }
