@@ -106,26 +106,25 @@ public class WebhookController
            
             switch (collectionName) {
                 case "dynamicProperty":
-                    handleDynamicProperty(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                    handleDynamicProperty(AuthorName, AuthorEmail, commitTime, collectionName, content);
                     break;
                 case "serverConfig":
-                    handleServerConfig(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                    handleServerConfig(AuthorName, AuthorEmail, commitTime, collectionName, content);
                     break;
                 case "sprProperty":
-                    handleSprProperty(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                    handleSprProperty(AuthorName, AuthorEmail, commitTime, collectionName, content);
                     break;
                 case "partnerLevelConfigBean":
-                    handlePartnerLevelConfigBean(AuthorName, AuthorEmail, commitTime, databaseName, collectionName,
+                    handlePartnerLevelConfigBean(AuthorName, AuthorEmail, commitTime,collectionName,
                             content);
                     break;
                 default:
-                    logger.warn("Unknown collection: {}", collectionName);
+                    logger.warn("Unknown collection: ", collectionName);
             }
         }
     }
     private void processGlobalFiles(String AuthorName,String AuthorEmail, String[] filesPathSplit, String commitId, LocalDateTime commitTime) {
 
-        String databaseName=activeProfile;
         String collectionName = filesPathSplit[1];
         String url = githubDownloadUrl + commitId + "/" + filesPathSplit[0] + "/" + filesPathSplit[1] + "/" + filesPathSplit[2];
         JsonNode content = fetchFileContent(url);
@@ -134,16 +133,16 @@ public class WebhookController
         }
         switch (collectionName) {
             case "dynamicProperty":
-                handleDynamicProperty(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                handleDynamicProperty(AuthorName, AuthorEmail, commitTime,  collectionName, content);
                 break;
             case "serverConfig":
-                handleServerConfig(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                handleServerConfig(AuthorName, AuthorEmail, commitTime, collectionName, content);
                 break;
             case "sprProperty":
-                handleSprProperty(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                handleSprProperty(AuthorName, AuthorEmail, commitTime, collectionName, content);
                 break;
             case "partnerLevelConfigBean":
-                handlePartnerLevelConfigBean(AuthorName, AuthorEmail, commitTime, databaseName, collectionName, content);
+                handlePartnerLevelConfigBean(AuthorName, AuthorEmail, commitTime, collectionName, content);
                 break;
             default:
                 logger.warn("Unknown collection: {}", collectionName);
@@ -152,6 +151,7 @@ public class WebhookController
 
     private JsonNode fetchFileContent(String url) {
         try {
+            
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + githubToken);
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -164,7 +164,7 @@ public class WebhookController
         }
     }
 
-    private void handleDynamicProperty(String AuthorName, String AuthorEmail, LocalDateTime commitTime, String databaseName,
+    private void handleDynamicProperty(String AuthorName, String AuthorEmail, LocalDateTime commitTime, 
             String collectionName, JsonNode content) {
         DynamicPropertyDetails dynamicPropertyDetails = new DynamicPropertyDetails();
         dynamicPropertyDetails.setAuthorName(AuthorName);
@@ -179,7 +179,7 @@ public class WebhookController
         propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key");
     }
 
-    private void handleServerConfig(String AuthorName, String AuthorEmail, LocalDateTime commitTime, String databaseName,
+    private void handleServerConfig(String AuthorName, String AuthorEmail, LocalDateTime commitTime, 
         String collectionName, JsonNode content) {
         ServerConfigDetails serverConfigDetails = new ServerConfigDetails();
         serverConfigDetails.setAuthorName(AuthorName);
@@ -196,7 +196,7 @@ public class WebhookController
         propertyService.saveProperty(serverConfigDetails, collectionName, "name");
     }
 
-    private void handleSprProperty(String AuthorName, String AuthorEmail, LocalDateTime commitTime, String databaseName,
+    private void handleSprProperty(String AuthorName, String AuthorEmail, LocalDateTime commitTime, 
         String collectionName, JsonNode content) {
         SprPropertyDetails sprPropertyDetails = new SprPropertyDetails();
         sprPropertyDetails.setAuthorName(AuthorName);
@@ -211,7 +211,7 @@ public class WebhookController
     }
 
    
-    private void handlePartnerLevelConfigBean(String authorName, String authorEmail, LocalDateTime commitTime, String databaseName, String collectionName, JsonNode content) {
+    private void handlePartnerLevelConfigBean(String authorName, String authorEmail, LocalDateTime commitTime,  String collectionName, JsonNode content) {
         PartnerLevelConfigBeanDetails partnerLevelConfigBean = new PartnerLevelConfigBeanDetails();
         partnerLevelConfigBean.setAuthorName(authorName);
         partnerLevelConfigBean.setAuthorEmail(authorEmail);

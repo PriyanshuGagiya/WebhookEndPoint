@@ -169,7 +169,4 @@ public class PropertyServiceImplements implements PropertyService {
         }
     }
 
-    private boolean isModifiedDateGreater(LocalDateTime newModifiedDate, LocalDateTime existingModifiedDate) {
-        return newModifiedDate.isAfter(existingModifiedDate);
-    }
 }
