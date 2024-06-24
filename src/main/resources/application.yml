@@ -2,6 +2,9 @@ github:
   token: 
   api:
     url: https://raw.githubusercontent.com/PriyanshuGagiya/DP/
+    time:
+      url: https://api.github.com/repos/PriyanshuGagiya/DP/commits?since=
+    commitdetailsapiurl: https://api.github.com/repos/PriyanshuGagiya/DP/commits/
 spring:
   application:
     name: dynamicproperty

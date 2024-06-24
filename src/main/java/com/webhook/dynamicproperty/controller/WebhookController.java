@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +37,7 @@ public class WebhookController
 
     private static final Logger logger = LoggerFactory.getLogger(WebhookController.class);
 
+    public HashSet<String> CommitIds;
     @Autowired
     private YamlToJsonService yamlToJsonService;
 
@@ -55,6 +56,7 @@ public class WebhookController
     public WebhookController(RestTemplate restTemplate, PropertyService propertyService) {
         this.restTemplate = restTemplate;
         this.propertyService = propertyService;
+        CommitIds = new HashSet<String>();
     }
 
     @PostMapping("/github")
@@ -63,20 +65,26 @@ public class WebhookController
             // System.out.println(jsonNode);
             JsonNode commits = jsonNode.get("commits");
             
-            for (JsonNode commit : commits) {
-                //System.out.println(commit.get("id").asText());
+            for (JsonNode commit : commits) 
+            {
+                String AuthotName=commit.get("author").get("name").asText();
+                String AuthotEmail=commit.get("author").get("email").asText();
+                String commitId=commit.get("id").asText();
+                JsonNode addedFiles=commit.get("added");
+                JsonNode modifiedFiles=commit.get("modified");
+                
+                CommitIds.add(commitId);
                 OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-                processFiles(commit.get("author").get("name").asText(),commit.get("author").get("email").asText(), commit.get("added"), commit.get("id").asText(), localDateTime);
-                processFiles(commit.get("author").get("name").asText(),commit.get("author").get("email").asText(), commit.get("modified"), commit.get("id").asText(),
-                localDateTime);
+                processFiles(AuthotName,AuthotEmail, addedFiles, commitId, localDateTime);
+                processFiles(AuthotName,AuthotEmail, modifiedFiles, commitId, localDateTime);
             }
         } catch (Exception e) {
             logger.error("Error processing GitHub webhook payload", e);
         }
     }
 
-    private void processFiles(String AuthorName,String AuthorEmail, JsonNode files, String commitId,LocalDateTime commitTime) 
+    public void processFiles(String AuthorName,String AuthorEmail, JsonNode files, String commitId,LocalDateTime commitTime) 
     {
         for (JsonNode file : files) 
         {
@@ -206,7 +214,7 @@ public class WebhookController
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
-
+        System.out.println(sprPropertyDetails.toString());
         propertyService.saveProperty(sprPropertyDetails, collectionName, "key");
     }
 
@@ -258,6 +266,7 @@ public class WebhookController
         });
         return map;
     }
+    
     
 
 }
