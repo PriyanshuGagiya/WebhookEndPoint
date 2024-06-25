@@ -5,13 +5,13 @@ github:
     time:
       url: https://api.github.com/repos/PriyanshuGagiya/DP/commits?since=
     commitdetailsapiurl: https://api.github.com/repos/PriyanshuGagiya/DP/commits/
-gitlab:
-  token: 
-  api:
-    url: https://gitlab.com/api/v4/projects/priyanshugagiya%2FDP/repository/files/
-    time:
-      url: https://gitlab.com/api/v4/projects/priyanshugagiya%2FDP/repository/commits?since=
-    commitdetailsapiurl: https://gitlab.com/api/v4/projects/priyanshugagiya%2FDP/repository/commits/
+# gitlab:
+#   token: 
+#   api:
+#     url: https://gitlab.com/api/v4/projects/priyanshugagiya%2FDP/repository/files/
+#     time:
+#       url: https://gitlab.com/api/v4/projects/priyanshugagiya%2FDP/repository/commits?since=
+#     commitdetailsapiurl: https://gitlab.com/api/v4/projects/priyanshugagiya%2FDP/repository/commits/
 spring:
   application:
     name: dynamicproperty

@@ -2,7 +2,10 @@ package com.webhook.dynamicproperty.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.webhook.dynamicproperty.controller.WebhookController;
+import com.webhook.dynamicproperty.service.GithubService;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.info.ProjectInfoProperties.Git;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,7 +30,7 @@ public class JobCleaner {
     private String githubToken;
 
     private final RestTemplate restTemplate;
-    private final WebhookController webhookController;
+   private final GithubService githubService;
     private LocalDateTime prev;
 
     @Value("${github.api.time.url}")
@@ -36,11 +39,10 @@ public class JobCleaner {
     @Value("${github.api.commitdetailsapiurl}")
     private String commitDetailsApi ;
 
-    public JobCleaner(RestTemplate restTemplate, WebhookController webhookController) {
+    public JobCleaner(RestTemplate restTemplate, GithubService githubService) {
         this.restTemplate = restTemplate;
-        this.webhookController = webhookController;
-        
-        prev=LocalDateTime.now(ZoneOffset.UTC);
+        this.githubService = githubService;
+        prev = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     
@@ -65,11 +67,9 @@ public class JobCleaner {
                 localDateTime = localDateTime.plusHours(5).plusMinutes(30);
                 System.out.println(localDateTime);
                 String commitSha = commit.path("sha").asText();
-                if (webhookController.CommitIds.contains(commitSha)) {
-                    webhookController.CommitIds.remove(commitSha);
-                    System.out.println("hell yeah");
-                    continue;
-                }
+                // if(githubService.isCommitProcessed(commitSha)){
+                //     continue;
+                // }
                 JsonNode commitDetails = FetchCommitDetails(commitSha);
                 
                processCommit(commitDetails, localDateTime);
@@ -88,12 +88,7 @@ public class JobCleaner {
             for (JsonNode file : files) {
                 String status = file.path("status").asText();
                 if ("added".equals(status) || "modified".equals(status)) {
-                    webhookController.processFiles(
-                            file,
-                            commitId,
-                            commitTime
-
-                    );
+                    
                 }
             }
         }
