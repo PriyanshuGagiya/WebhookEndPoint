@@ -1,11 +1,8 @@
 package com.webhook.dynamicproperty.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.webhook.dynamicproperty.controller.WebhookController;
 import com.webhook.dynamicproperty.service.GithubService;
-
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.info.ProjectInfoProperties.Git;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,110 +14,116 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.core.ParameterizedTypeReference;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-// @Configuration
-// @EnableScheduling
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Configuration
+@EnableScheduling
 public class JobCleaner {
+
+    private static final Logger logger = LoggerFactory.getLogger(JobCleaner.class);
 
     @Value("${github.token}")
     private String githubToken;
-
-    private final RestTemplate restTemplate;
-   private final GithubService githubService;
-    private LocalDateTime prev;
 
     @Value("${github.api.time.url}")
     private String githubApi;
 
     @Value("${github.api.commitdetailsapiurl}")
-    private String commitDetailsApi ;
+    private String commitDetailsApi;
+
+    private final RestTemplate restTemplate;
+    private final GithubService githubService;
+    private LocalDateTime prev;
 
     public JobCleaner(RestTemplate restTemplate, GithubService githubService) {
         this.restTemplate = restTemplate;
         this.githubService = githubService;
-        prev = LocalDateTime.now(ZoneOffset.UTC);
+        this.prev = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    
-    @Scheduled(fixedRate =  30*1000 )
-    public void RobustnessCheck() {
-
+    @Scheduled(fixedRate = 30 * 1000)
+    public void robustnessCheck() {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        
-        String formattedPrev = prev.toString()+"Z";
-        String formattedNow = now.toString()+"Z";
-      
+        String formattedPrev = formatDateTime(prev);
+        String formattedNow = formatDateTime(now);
         String completeGithubApi = githubApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-       
-        System.out.println(completeGithubApi);
-        List<JsonNode> commits = FetchCommits(completeGithubApi);
+
+        logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
+        List<JsonNode> commits = fetchCommits(completeGithubApi);
+
         if (commits != null) {
             for (JsonNode commit : commits) {
-                OffsetDateTime offsetDateTime = OffsetDateTime.parse(
-                        commit.path("commit").path("author").path("date").asText(),
-                        DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-                localDateTime = localDateTime.plusHours(5).plusMinutes(30);
-                System.out.println(localDateTime);
-                String commitSha = commit.path("sha").asText();
-                // if(githubService.isCommitProcessed(commitSha)){
-                //     continue;
-                // }
-                JsonNode commitDetails = FetchCommitDetails(commitSha);
-                
-               processCommit(commitDetails, localDateTime);
+                processCommit(commit);
             }
         }
+
         prev = now;
     }
 
-    private void processCommit(JsonNode commit, LocalDateTime commitTime) {
-        String commitId = commit.path("sha").asText();
+    private void processCommit(JsonNode commitNode) {
+        String commitSha = commitNode.path("sha").asText();
+        OffsetDateTime commitDateTime = OffsetDateTime.parse(
+                commitNode.path("commit").path("author").path("date").asText(),
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        LocalDateTime localCommitDateTime = commitDateTime.toLocalDateTime().plusHours(5).plusMinutes(30);
 
-        JsonNode files = commit.path("files");
-        System.out.println(files);
-        System.out.println(commitTime);
-        if (files != null) {
-            for (JsonNode file : files) {
-                String status = file.path("status").asText();
-                if ("added".equals(status) || "modified".equals(status)) {
-                    
-                }
-            }
+        if (githubService.containsCommit(commitSha)) {
+            githubService.removeCommit(commitSha);
+            return;
+        }
+
+        JsonNode commitDetails = fetchCommitDetails(commitSha);
+        if (commitDetails != null) {
+            githubService.processFiles(commitDetails, commitSha, localCommitDateTime);
         }
     }
 
-    private List<JsonNode> FetchCommits(String url) {
+    private List<JsonNode> fetchCommits(String url) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + githubToken);
+        headers.setBearerAuth(githubToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<List<JsonNode>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<List<JsonNode>>() {
-                });
+        try {
+            ResponseEntity<List<JsonNode>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<List<JsonNode>>() {});
 
-        return response.getBody();
+            return response.getBody();
+        } catch (Exception e) {
+            logger.error("Error fetching commits from GitHub API: {}", e.getMessage());
+            return null;
+        }
     }
 
-    private JsonNode FetchCommitDetails(String sha) {
+    private JsonNode fetchCommitDetails(String sha) {
         String url = commitDetailsApi + sha;
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + githubToken);
+        headers.setBearerAuth(githubToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<JsonNode> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                JsonNode.class);
+        try {
+            ResponseEntity<JsonNode> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    JsonNode.class);
 
-        return response.getBody();
+            return response.getBody();
+        } catch (Exception e) {
+            logger.error("Error fetching commit details for {} from GitHub API: {}", sha, e.getMessage());
+            return null;
+        }
+    }
+
+    private String formatDateTime(LocalDateTime dateTime) {
+        return dateTime.toString() + "Z";
     }
 }

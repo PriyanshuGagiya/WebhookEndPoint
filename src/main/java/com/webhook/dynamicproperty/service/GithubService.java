@@ -32,6 +32,7 @@ public class GithubService {
     @Autowired
     private PropertyService propertyService;
 
+    private HashSet<String> Commits = new HashSet<String>();
     @Autowired
     private RestTemplate restTemplate;
 
@@ -57,13 +58,14 @@ public class GithubService {
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
                 processFiles(addedFiles, commitId, localDateTime);
                 processFiles(modifiedFiles, commitId, localDateTime);
+                Commits.add(commitId);
             }
         } catch (Exception e) {
             logger.error("Error processing GitHub webhook payload", e);
         }
     }
 
-    private void processFiles(JsonNode files, String commitId, LocalDateTime commitTime) {
+    public void processFiles(JsonNode files, String commitId, LocalDateTime commitTime) {
         for (JsonNode file : files) {
             String filePath = file.asText();
             String[] filesPathSplit = filePath.split("/");
@@ -217,5 +219,11 @@ public class GithubService {
             }
         });
         return map;
+    }
+    public boolean containsCommit(String commitId) {
+        return Commits.contains(commitId);
+    }
+    public void removeCommit(String commitId) {
+        Commits.remove(commitId);
     }
 }
