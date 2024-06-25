@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/webhook")
-public class WebhookController {
+public class GithubWebhookController {
     @Autowired
     private GithubService githubService;
 
