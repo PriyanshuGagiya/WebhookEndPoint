@@ -62,13 +62,11 @@ public class WebhookController
     @PostMapping("/github")
     public void gitWebhook(@RequestBody JsonNode jsonNode) {
         try {
-            // System.out.println(jsonNode);
+           
             JsonNode commits = jsonNode.get("commits");
             
             for (JsonNode commit : commits) 
             {
-                String AuthotName=commit.get("author").get("name").asText();
-                String AuthotEmail=commit.get("author").get("email").asText();
                 String commitId=commit.get("id").asText();
                 JsonNode addedFiles=commit.get("added");
                 JsonNode modifiedFiles=commit.get("modified");
@@ -76,15 +74,15 @@ public class WebhookController
                 CommitIds.add(commitId);
                 OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-                processFiles(AuthotName,AuthotEmail, addedFiles, commitId, localDateTime);
-                processFiles(AuthotName,AuthotEmail, modifiedFiles, commitId, localDateTime);
+                processFiles(addedFiles, commitId, localDateTime);
+                processFiles(modifiedFiles, commitId, localDateTime);
             }
         } catch (Exception e) {
             logger.error("Error processing GitHub webhook payload", e);
         }
     }
 
-    public void processFiles(String AuthorName,String AuthorEmail, JsonNode files, String commitId,LocalDateTime commitTime) 
+    public void processFiles(JsonNode files, String commitId,LocalDateTime commitTime) 
     {
         for (JsonNode file : files) 
         {
@@ -95,7 +93,7 @@ public class WebhookController
             {
                 if(filesPathSplit.length==3)
                 {
-                    processGlobalFiles(AuthorName,AuthorEmail, filesPathSplit, commitId, commitTime);
+                    processGlobalFiles(filesPathSplit, commitId, commitTime);
                 }
                 continue;
             }
@@ -114,16 +112,16 @@ public class WebhookController
            
             switch (collectionName) {
                 case "dynamicProperty":
-                    handleDynamicProperty(AuthorName, AuthorEmail, commitTime, collectionName, content);
+                    handleDynamicProperty(commitTime, collectionName, content);
                     break;
                 case "serverConfig":
-                    handleServerConfig(AuthorName, AuthorEmail, commitTime, collectionName, content);
+                    handleServerConfig(commitTime, collectionName, content);
                     break;
                 case "sprProperty":
-                    handleSprProperty(AuthorName, AuthorEmail, commitTime, collectionName, content);
+                    handleSprProperty(commitTime, collectionName, content);
                     break;
                 case "partnerLevelConfigBean":
-                    handlePartnerLevelConfigBean(AuthorName, AuthorEmail, commitTime,collectionName,
+                    handlePartnerLevelConfigBean(commitTime,collectionName,
                             content);
                     break;
                 default:
@@ -131,7 +129,7 @@ public class WebhookController
             }
         }
     }
-    private void processGlobalFiles(String AuthorName,String AuthorEmail, String[] filesPathSplit, String commitId, LocalDateTime commitTime) {
+    private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime) {
 
         String collectionName = filesPathSplit[1];
         String url = githubDownloadUrl + commitId + "/" + filesPathSplit[0] + "/" + filesPathSplit[1] + "/" + filesPathSplit[2];
@@ -141,16 +139,16 @@ public class WebhookController
         }
         switch (collectionName) {
             case "dynamicProperty":
-                handleDynamicProperty(AuthorName, AuthorEmail, commitTime,  collectionName, content);
+                handleDynamicProperty(commitTime,  collectionName, content);
                 break;
             case "serverConfig":
-                handleServerConfig(AuthorName, AuthorEmail, commitTime, collectionName, content);
+                handleServerConfig(commitTime, collectionName, content);
                 break;
             case "sprProperty":
-                handleSprProperty(AuthorName, AuthorEmail, commitTime, collectionName, content);
+                handleSprProperty(commitTime, collectionName, content);
                 break;
             case "partnerLevelConfigBean":
-                handlePartnerLevelConfigBean(AuthorName, AuthorEmail, commitTime, collectionName, content);
+                handlePartnerLevelConfigBean(commitTime, collectionName, content);
                 break;
             default:
                 logger.warn("Unknown collection: {}", collectionName);
@@ -172,12 +170,9 @@ public class WebhookController
         }
     }
 
-    private void handleDynamicProperty(String AuthorName, String AuthorEmail, LocalDateTime commitTime, 
+    private void handleDynamicProperty(LocalDateTime commitTime, 
             String collectionName, JsonNode content) {
         DynamicPropertyDetails dynamicPropertyDetails = new DynamicPropertyDetails();
-        dynamicPropertyDetails.setAuthorName(AuthorName);
-        dynamicPropertyDetails.setAuthorEmail(AuthorEmail);
-        
         dynamicPropertyDetails.setModifiedDate(commitTime); 
         dynamicPropertyDetails.setKey(content.get("key").asText());
         dynamicPropertyDetails.setProperty(content.get("property").asText());
@@ -187,11 +182,9 @@ public class WebhookController
         propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key");
     }
 
-    private void handleServerConfig(String AuthorName, String AuthorEmail, LocalDateTime commitTime, 
+    private void handleServerConfig(LocalDateTime commitTime, 
         String collectionName, JsonNode content) {
         ServerConfigDetails serverConfigDetails = new ServerConfigDetails();
-        serverConfigDetails.setAuthorName(AuthorName);
-        serverConfigDetails.setAuthorEmail(AuthorEmail);
         serverConfigDetails.setModifiedDate(commitTime);
         serverConfigDetails.setDbName(content.get("dbName").asText());
         serverConfigDetails.setUrl(content.get("url").asText());
@@ -204,11 +197,9 @@ public class WebhookController
         propertyService.saveProperty(serverConfigDetails, collectionName, "name");
     }
 
-    private void handleSprProperty(String AuthorName, String AuthorEmail, LocalDateTime commitTime, 
+    private void handleSprProperty( LocalDateTime commitTime, 
         String collectionName, JsonNode content) {
         SprPropertyDetails sprPropertyDetails = new SprPropertyDetails();
-        sprPropertyDetails.setAuthorName(AuthorName);
-        sprPropertyDetails.setAuthorEmail(AuthorEmail);
         sprPropertyDetails.setModifiedDate(commitTime);
         sprPropertyDetails.setKey(content.get("key").asText());
         sprPropertyDetails.setValue(content.get("value").asText());
@@ -219,10 +210,8 @@ public class WebhookController
     }
 
    
-    private void handlePartnerLevelConfigBean(String authorName, String authorEmail, LocalDateTime commitTime,  String collectionName, JsonNode content) {
+    private void handlePartnerLevelConfigBean(LocalDateTime commitTime,  String collectionName, JsonNode content) {
         PartnerLevelConfigBeanDetails partnerLevelConfigBean = new PartnerLevelConfigBeanDetails();
-        partnerLevelConfigBean.setAuthorName(authorName);
-        partnerLevelConfigBean.setAuthorEmail(authorEmail);
         partnerLevelConfigBean.setModifiedDate(commitTime);
     
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));

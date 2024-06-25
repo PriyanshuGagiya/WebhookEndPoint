@@ -15,8 +15,6 @@ public class SprPropertyDetails
     
     @Id
     private String id;
-    private String authorName;
-    private String authorEmail;
     @Indexed(unique = true)
     private String key;
     private String value;

@@ -1,9 +1,8 @@
-package com.webhook.dynamicproperty.Scheduler;
+package com.webhook.dynamicproperty.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.webhook.dynamicproperty.controller.WebhookController;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cglib.core.Local;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,8 +19,8 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@Configuration
-@EnableScheduling
+// @Configuration
+// @EnableScheduling
 public class JobCleaner {
 
     @Value("${github.token}")
@@ -54,7 +53,7 @@ public class JobCleaner {
         String formattedNow = now.toString()+"Z";
       
         String completeGithubApi = githubApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-        prev = now;
+       
         System.out.println(completeGithubApi);
         List<JsonNode> commits = FetchCommits(completeGithubApi);
         if (commits != null) {
@@ -76,11 +75,10 @@ public class JobCleaner {
                processCommit(commitDetails, localDateTime);
             }
         }
+        prev = now;
     }
 
     private void processCommit(JsonNode commit, LocalDateTime commitTime) {
-        String authorName = commit.path("commit").path("author").path("name").asText();
-        String authorEmail = commit.path("commit").path("author").path("email").asText();
         String commitId = commit.path("sha").asText();
 
         JsonNode files = commit.path("files");
@@ -91,8 +89,6 @@ public class JobCleaner {
                 String status = file.path("status").asText();
                 if ("added".equals(status) || "modified".equals(status)) {
                     webhookController.processFiles(
-                            authorName,
-                            authorEmail,
                             file,
                             commitId,
                             commitTime

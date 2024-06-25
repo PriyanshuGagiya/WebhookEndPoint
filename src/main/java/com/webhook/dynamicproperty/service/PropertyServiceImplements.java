@@ -133,7 +133,8 @@ public class PropertyServiceImplements implements PropertyService {
         return update;
     }
 
-    private <T> Object getUniqueFieldValue(T property, String uniqueFieldName) {
+    private <T> Object getUniqueFieldValue(T property, String uniqueFieldName) 
+    {
         try {
             if (uniqueFieldName.startsWith("config.")) {
                 String nestedFieldName = uniqueFieldName.substring("config.".length());
@@ -148,13 +149,16 @@ public class PropertyServiceImplements implements PropertyService {
         }
     }
 
-    private <T> Object getNestedFieldValue(T property, String fieldName) {
-        try {
+    private <T> Object getNestedFieldValue(T property, String fieldName) 
+    {
+        try 
+        {
             Field configField = property.getClass().getDeclaredField("config");
             configField.setAccessible(true);
             Map<String, Object> configMap = (Map<String, Object>) configField.get(property);
             return configMap.get(fieldName);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) 
+        {
             throw new RuntimeException("Error getting nested field value", e);
         }
     }

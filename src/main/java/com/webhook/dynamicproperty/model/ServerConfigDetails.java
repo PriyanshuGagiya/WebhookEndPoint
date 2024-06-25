@@ -14,8 +14,6 @@ public class ServerConfigDetails
 {
     @Id
     private String id;
-    private String authorName;
-    private String authorEmail;
     private String dbName;
     private String url;
     private long partnerId;
