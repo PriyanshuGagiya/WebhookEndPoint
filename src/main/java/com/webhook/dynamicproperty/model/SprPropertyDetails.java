@@ -5,12 +5,14 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.query.Update;
+
 import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
 @Document(collection = "sprPropertyDetails")
-public class SprPropertyDetails
+public class SprPropertyDetails implements SprinklrProperty
 {
     
     @Id
@@ -24,5 +26,34 @@ public class SprPropertyDetails
     private LocalDateTime createdDate;
     @LastModifiedDate
     private LocalDateTime modifiedDate;
+
+    @Override
+    public Update createUpdateFromPropertyOninsert(LocalDateTime createdDateTime)
+    {
+        Update update = new Update();
+        update.setOnInsert("key", key);
+        update.setOnInsert("value", value);
+        update.setOnInsert("isSecure", isSecure);
+        update.setOnInsert("_class", _class);
+        update.setOnInsert("createdDate", createdDateTime);
+        update.setOnInsert("modifiedDate", createdDateTime);
+        return update;
+    }
+
+    @Override
+    public Update createUpdateFromProperty()
+    {
+        Update update = new Update();
+        update.set("key", key);
+        update.set("value", value);
+        update.set("isSecure", isSecure);
+        update.set("modifiedDate", modifiedDate);
+        return update;
+    }
+    @Override
+    public LocalDateTime getModifiedDateTime()
+    {
+        return modifiedDate;
+    }
     
 }

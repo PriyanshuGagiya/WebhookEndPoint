@@ -4,6 +4,7 @@ import com.webhook.dynamicproperty.config.MongoConfig;
 import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
+import com.webhook.dynamicproperty.model.SprinklrProperty;
 import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -27,150 +28,79 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     @Override
-    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName, String uniqueFieldName) {
-        return save(dynamicPropertyDetails, collectionName, uniqueFieldName);
+    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName, String uniqueFieldName, String uniqueField) {
+        return save(dynamicPropertyDetails, collectionName, uniqueFieldName, uniqueField);
     }
 
     @Override
-    public String saveProperty(ServerConfigDetails serverConfigDetails, String collectionName, String uniqueFieldName) {
-        return save(serverConfigDetails, collectionName, uniqueFieldName);
+    public String saveProperty(ServerConfigDetails serverConfigDetails, String collectionName, String uniqueFieldName, String uniqueField) {
+        return save(serverConfigDetails, collectionName, uniqueFieldName, uniqueField);
     }
 
     @Override
-    public String saveProperty(SprPropertyDetails sprPropertyDetails, String collectionName, String uniqueFieldName) {
-        return save(sprPropertyDetails, collectionName, uniqueFieldName);
+    public String saveProperty(SprPropertyDetails sprPropertyDetails, String collectionName, String uniqueFieldName, String uniqueField) {
+        return save(sprPropertyDetails, collectionName, uniqueFieldName, uniqueField);
     }
 
     @Override
-    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames) {
-        return save(partnerLevelConfigBeanDetails, collectionName, uniqueFieldNames);
+    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames, List<String> uniqueFields) {
+        return save(partnerLevelConfigBeanDetails, collectionName, uniqueFieldNames, uniqueFields);
     }
 
-    private String save(Object property, String collectionName, String uniqueFieldName) {
+    private String save(SprinklrProperty property, String collectionName, String uniqueFieldName,String uniqueField) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
-        findAndModify(mongoTemplate, property, collectionName, uniqueFieldName, getModifiedDate(property));
+        findAndModify(mongoTemplate, property, collectionName, uniqueFieldName, property.getModifiedDateTime(),uniqueField);
         
         return "saved";
     }
 
-    private String save(Object property, String collectionName, List<String> uniqueFieldNames) {
+    private String save(SprinklrProperty property, String collectionName, List<String> uniqueFieldNames,List<String> uniqueFields) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
-        findAndModify(mongoTemplate, property, collectionName, uniqueFieldNames, getModifiedDate(property));
+        findAndModify(mongoTemplate, property, collectionName, uniqueFieldNames, property.getModifiedDateTime(),uniqueFields);
         return "saved";
     }
 
-    private <T> void findAndModify(MongoTemplate mongoTemplate, T property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDate) 
+    private void findAndModify(MongoTemplate mongoTemplate, SprinklrProperty property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDate,String uniqueField) 
     {
         Query query = new Query();
-        Criteria criteria = Criteria.where(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
+        Criteria criteria = Criteria.where(uniqueFieldName).is(uniqueField);
         query.addCriteria(criteria);
-        Update update = createUpdateFromPropertyOninsert(property);
-        update.setOnInsert("createdDate", modifiedDate);
+        Update update = property.createUpdateFromPropertyOninsert(modifiedDate);
         mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
         
         query = new Query();
         criteria= new Criteria();
-        criteria= criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
+        criteria= criteria.and(uniqueFieldName).is(uniqueField);
         criteria= criteria.and("modifiedDate").lt(modifiedDate);
         query.addCriteria(criteria);
-        update = createUpdateFromProperty(property);
+        update = property.createUpdateFromProperty();
         mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);
     }
 
-    private <T> void findAndModify(MongoTemplate mongoTemplate, T property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDate) 
+    private void findAndModify(MongoTemplate mongoTemplate, SprinklrProperty property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDate,List<String> uniqueFields) 
     {
         Query query = new Query();
         Criteria criteria = new Criteria();
-        for (String uniqueFieldName : uniqueFieldNames) {
-            criteria = criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
+        for(int i=0;i<uniqueFieldNames.size();i++)
+        {
+            criteria = criteria.and(uniqueFieldNames.get(i)).is(uniqueFields.get(i));
         }
         query.addCriteria(criteria);
-        Update update = createUpdateFromPropertyOninsert(property);
-        update.setOnInsert("createdDate", modifiedDate);
+        Update update = property.createUpdateFromPropertyOninsert(modifiedDate);
         mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
 
         query = new Query();
         criteria = new Criteria();
-        for (String uniqueFieldName : uniqueFieldNames) {
-            criteria = criteria.and(uniqueFieldName).is(getUniqueFieldValue(property, uniqueFieldName));
+        for(int i=0;i<uniqueFieldNames.size();i++)
+        {
+            criteria = criteria.and(uniqueFieldNames.get(i)).is(uniqueFields.get(i));
         }
         criteria = criteria.and("modifiedDate").lt(modifiedDate);
         query.addCriteria(criteria);
-        update = createUpdateFromProperty(property);
+        update = property.createUpdateFromProperty();
         mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);   
        
     }
 
-    private <T> Update createUpdateFromProperty(T property) {
-        Update update = new Update();
-        for (Field field : property.getClass().getDeclaredFields()) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(property);
-                if (value != null) {
-                    update.set(field.getName(), value);
-                }
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Error accessing field value", e);
-            }
-        }
-        return update;
-    }
-
-    private <T> Update createUpdateFromPropertyOninsert(T property) {
-        Update update = new Update();
-        for (Field field : property.getClass().getDeclaredFields()) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(property);
-                if (value != null) {
-                    update.setOnInsert(field.getName(), value);
-                }
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Error accessing field value", e);
-            }
-        }
-        return update;
-    }
-
-    private <T> Object getUniqueFieldValue(T property, String uniqueFieldName) 
-    {
-        try {
-            if (uniqueFieldName.startsWith("config.")) {
-                String nestedFieldName = uniqueFieldName.substring("config.".length());
-                return getNestedFieldValue(property, nestedFieldName);
-            } else {
-                Field field = property.getClass().getDeclaredField(uniqueFieldName);
-                field.setAccessible(true);
-                return field.get(property);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Error getting unique field value", e);
-        }
-    }
-
-    private <T> Object getNestedFieldValue(T property, String fieldName) 
-    {
-        try 
-        {
-            Field configField = property.getClass().getDeclaredField("config");
-            configField.setAccessible(true);
-            Map<String, Object> configMap = (Map<String, Object>) configField.get(property);
-            return configMap.get(fieldName);
-        } catch (NoSuchFieldException | IllegalAccessException e) 
-        {
-            throw new RuntimeException("Error getting nested field value", e);
-        }
-    }
-
-    private <T> LocalDateTime getModifiedDate(T property) {
-        try {
-            Field field = property.getClass().getDeclaredField("modifiedDate");
-            field.setAccessible(true);
-            return (LocalDateTime) field.get(property);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Error getting modified date", e);
-        }
-    }
-
+    
 }

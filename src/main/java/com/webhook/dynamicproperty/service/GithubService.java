@@ -154,7 +154,7 @@ public class GithubService {
         dynamicPropertyDetails.setValue(content.get("value").asText());
         dynamicPropertyDetails.setReason(content.get("reason").asText());
         dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
-        propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key");
+        propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key", dynamicPropertyDetails.getKey());
     }
 
     private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content) {
@@ -168,7 +168,7 @@ public class GithubService {
         serverConfigDetails.setServerType(content.get("serverType").asText());
         serverConfigDetails.setName(content.get("name").asText());
         serverConfigDetails.set_class(content.get("_class").asText());
-        propertyService.saveProperty(serverConfigDetails, collectionName, "name");
+        propertyService.saveProperty(serverConfigDetails, collectionName, "name", serverConfigDetails.getName());
     }
 
     private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content) {
@@ -178,7 +178,7 @@ public class GithubService {
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
-        propertyService.saveProperty(sprPropertyDetails, collectionName, "key");
+        propertyService.saveProperty(sprPropertyDetails, collectionName, "key", sprPropertyDetails.getKey());
     }
 
     private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content) {
@@ -187,7 +187,15 @@ public class GithubService {
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));
         partnerLevelConfigBean.setConfig(config);
         partnerLevelConfigBean.set_class(content.get("_class").asText());
-        propertyService.saveProperty(partnerLevelConfigBean, collectionName, List.of("config.module", "config.type", "config.configClassName"));
+        List<String> uniqueFieldNames = new ArrayList<>();
+        uniqueFieldNames.add("config.module");
+        uniqueFieldNames.add("config.type");
+        uniqueFieldNames.add("config.configClassName");
+        List<String> uniqueFields = new ArrayList<>();
+        uniqueFields.add((String) config.get("module"));
+        uniqueFields.add((String) config.get("type"));
+        uniqueFields.add((String) config.get("configClassName"));
+        propertyService.saveProperty(partnerLevelConfigBean, collectionName, uniqueFieldNames, uniqueFields);
     }
 
     private Map<String, Object> convertJsonNodeToMap(JsonNode jsonNode) {

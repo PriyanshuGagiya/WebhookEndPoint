@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,8 +37,8 @@ public class GitlabService {
 
     private HashSet<String> Commits = new HashSet<>();
 
-    @Autowired
-    private RestTemplate restTemplate;
+    // @Autowired
+    // private RestTemplate restTemplate;
 
     @Value("${spring.profiles.active}")
     private String activeProfile;
@@ -139,7 +141,6 @@ public class GitlabService {
 
     private JsonNode fetchFileContent(String url) {
         try {
-
             OkHttpClient client = new OkHttpClient().newBuilder()
                     .build();
             Request request = new Request.Builder()
@@ -166,7 +167,7 @@ public class GitlabService {
         dynamicPropertyDetails.setValue(content.get("value").asText());
         dynamicPropertyDetails.setReason(content.get("reason").asText());
         dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
-        propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key");
+        propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key",dynamicPropertyDetails.getKey());
     }
 
     private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content) {
@@ -180,7 +181,7 @@ public class GitlabService {
         serverConfigDetails.setServerType(content.get("serverType").asText());
         serverConfigDetails.setName(content.get("name").asText());
         serverConfigDetails.set_class(content.get("_class").asText());
-        propertyService.saveProperty(serverConfigDetails, collectionName, "name");
+        propertyService.saveProperty(serverConfigDetails, collectionName, "name",serverConfigDetails.getName());
     }
 
     private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content) {
@@ -190,7 +191,7 @@ public class GitlabService {
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
-        propertyService.saveProperty(sprPropertyDetails, collectionName, "key");
+        propertyService.saveProperty(sprPropertyDetails, collectionName, "key",sprPropertyDetails.getKey());
     }
 
     private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content) {
@@ -199,8 +200,16 @@ public class GitlabService {
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));
         partnerLevelConfigBean.setConfig(config);
         partnerLevelConfigBean.set_class(content.get("_class").asText());
-        propertyService.saveProperty(partnerLevelConfigBean, collectionName,
-                List.of("config.module", "config.type", "config.configClassName"));
+        List<String> uniqueFieldNames = new ArrayList<>();
+        uniqueFieldNames.add("config.module");
+        uniqueFieldNames.add("config.type");
+        uniqueFieldNames.add("config.configClassName");
+        List<String> uniqueFields= new ArrayList<>();
+        uniqueFields.add(partnerLevelConfigBean.getConfig().get("module").toString());
+        uniqueFields.add(partnerLevelConfigBean.getConfig().get("type").toString());
+        uniqueFields.add(partnerLevelConfigBean.getConfig().get("configClassName").toString());
+
+        propertyService.saveProperty(partnerLevelConfigBean, collectionName,uniqueFieldNames,uniqueFields);
     }
 
     private Map<String, Object> convertJsonNodeToMap(JsonNode jsonNode) {
