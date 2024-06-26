@@ -5,14 +5,15 @@ import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
 import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-public class GithubService {
+public class GitlabService {
 
     private static final Logger logger = LoggerFactory.getLogger(GithubService.class);
 
@@ -32,21 +33,23 @@ public class GithubService {
     @Autowired
     private PropertyService propertyService;
 
-    private HashSet<String> Commits = new HashSet<String>();
+    private HashSet<String> Commits = new HashSet<>();
+
     @Autowired
     private RestTemplate restTemplate;
 
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    @Value("${github.token}")
-    private String githubToken;
+    @Value("${gitlab.token}")
+    private String gitlabToken;
 
-    @Value("${github.api.url}")
-    private String githubDownloadUrl;
+    @Value("${gitlab.api.url}")
+    private String gitlabDownloadUrl;
 
     public void processWebhookPayload(JsonNode jsonNode) {
         try {
+            // System.out.println(jsonNode);
             JsonNode commits = jsonNode.get("commits");
 
             for (JsonNode commit : commits) {
@@ -54,7 +57,8 @@ public class GithubService {
                 JsonNode addedFiles = commit.get("added");
                 JsonNode modifiedFiles = commit.get("modified");
 
-                OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(),
+                        DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
                 processFiles(addedFiles, commitId, localDateTime);
                 processFiles(modifiedFiles, commitId, localDateTime);
@@ -80,7 +84,8 @@ public class GithubService {
                 continue;
             }
             String collectionName = filesPathSplit[1];
-            String url = githubDownloadUrl + commitId + "/" + filePath;
+            String filepath = String.join("%2F", filesPathSplit);
+            String url = gitlabDownloadUrl + filepath + "/raw?ref=" + commitId;
 
             JsonNode content = fetchFileContent(url);
             if (content == null) {
@@ -108,7 +113,8 @@ public class GithubService {
 
     private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime) {
         String collectionName = filesPathSplit[1];
-        String url = githubDownloadUrl + commitId + "/" + filesPathSplit[0] + "/" + filesPathSplit[1] + "/" + filesPathSplit[2];
+        String filepath = String.join("%2F", filesPathSplit);
+        String url = gitlabDownloadUrl + filepath + "/raw?ref=" + commitId;
         JsonNode content = fetchFileContent(url);
         if (content == null) {
             return;
@@ -133,15 +139,21 @@ public class GithubService {
 
     private JsonNode fetchFileContent(String url) {
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + githubToken);
-            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            OkHttpClient client = new OkHttpClient().newBuilder()
+                    .build();
+            Request request = new Request.Builder()
+                    .url(url)
+                    .method("GET", null)
+                    .addHeader("PRIVATE-TOKEN", gitlabToken)
+                     .build();
+            Response response = client.newCall(request).execute();
+            String yamlContent = response.body().string();
            
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-            String content = response.getBody();
-            return yamlToJsonService.convertYamlToJson(content);
-        } catch (Exception e) {
-            logger.error("Error fetching file content from GitHub: {}", url, e);
+            return yamlToJsonService.convertYamlToJson(yamlContent);
+        } catch (Exception e) 
+        {
+            System.out.println("Error fetching file content from GitLab API: " + e.getMessage());
             return null;
         }
     }
@@ -187,7 +199,8 @@ public class GithubService {
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));
         partnerLevelConfigBean.setConfig(config);
         partnerLevelConfigBean.set_class(content.get("_class").asText());
-        propertyService.saveProperty(partnerLevelConfigBean, collectionName, List.of("config.module", "config.type", "config.configClassName"));
+        propertyService.saveProperty(partnerLevelConfigBean, collectionName,
+                List.of("config.module", "config.type", "config.configClassName"));
     }
 
     private Map<String, Object> convertJsonNodeToMap(JsonNode jsonNode) {
@@ -221,9 +234,11 @@ public class GithubService {
         });
         return map;
     }
+
     public boolean containsCommit(String commitId) {
         return Commits.contains(commitId);
     }
+
     public void removeCommit(String commitId) {
         Commits.remove(commitId);
     }

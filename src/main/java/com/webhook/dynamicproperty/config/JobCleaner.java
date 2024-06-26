@@ -22,8 +22,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Configuration
-@EnableScheduling
+// @Configuration
+// @EnableScheduling
 public class JobCleaner {
 
     private static final Logger logger = LoggerFactory.getLogger(JobCleaner.class);
