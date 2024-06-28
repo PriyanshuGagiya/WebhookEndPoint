@@ -191,14 +191,7 @@ public class GitlabService {
         serverConfigDetails.setServerType(content.get("serverType").asText());
         serverConfigDetails.setName(content.get("name").asText());
         serverConfigDetails.set_class(content.get("_class").asText());
-        if(isRemoved)
-        {
-            serverConfigDetails.setDeleted(true);
-        }
-        else
-        {
-            serverConfigDetails.setDeleted(false);
-        }
+        serverConfigDetails.setDeleted(content.get("deleted").asBoolean());
         propertyService.save(serverConfigDetails, collectionName, "name", serverConfigDetails.getName());
     }
 
@@ -209,14 +202,7 @@ public class GitlabService {
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
-        if(isRemoved)
-        {
-            sprPropertyDetails.setDeleted(true);
-        }
-        else
-        {
-            sprPropertyDetails.setDeleted(false);
-        }
+        sprPropertyDetails.setDeleted(content.get("deleted").asBoolean());
         propertyService.save(sprPropertyDetails, collectionName, "key", sprPropertyDetails.getKey());
     }
 
@@ -234,14 +220,7 @@ public class GitlabService {
         uniqueFields.add((String) config.get("module"));
         uniqueFields.add((String) config.get("type"));
         uniqueFields.add((String) config.get("configClassName"));
-        if(isRemoved)
-        {
-            partnerLevelConfigBean.setDeleted(true);
-        }
-        else
-        {
-            partnerLevelConfigBean.setDeleted(false);
-        }
+        partnerLevelConfigBean.setDeleted(content.get("deleted").asBoolean());
         propertyService.save(partnerLevelConfigBean, collectionName, uniqueFieldNames, uniqueFields);
     }
 

@@ -2,6 +2,8 @@ package com.webhook.dynamicproperty.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.webhook.dynamicproperty.service.GithubService;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -37,17 +39,17 @@ public class JobCleaner {
     @Value("${github.api.commitdetailsapiurl}")
     private String commitDetailsApi;
 
-    private final RestTemplate restTemplate;
-    private final GithubService githubService;
+    @Autowired
+    private  RestTemplate restTemplate;
+    @Autowired
+    private GithubService githubService;
     private LocalDateTime prev;
 
-    public JobCleaner(RestTemplate restTemplate, GithubService githubService) {
-        this.restTemplate = restTemplate;
-        this.githubService = githubService;
+    public JobCleaner() {
         this.prev = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    @Scheduled(fixedRate = 10 * 1000)
+    @Scheduled(fixedRate = 6000)
     public void robustnessCheck() {
         System.out.println("hello");
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
