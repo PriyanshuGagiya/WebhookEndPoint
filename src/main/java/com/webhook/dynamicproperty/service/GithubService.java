@@ -163,7 +163,7 @@ public class GithubService {
         {
             dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
         }
-        propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key", dynamicPropertyDetails.getKey());
+        propertyService.save(dynamicPropertyDetails, collectionName, "key", dynamicPropertyDetails.getKey());
     }
 
     private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
@@ -185,7 +185,7 @@ public class GithubService {
         {
             serverConfigDetails.setDeleted(false);
         }
-        propertyService.saveProperty(serverConfigDetails, collectionName, "name", serverConfigDetails.getName());
+        propertyService.save(serverConfigDetails, collectionName, "name", serverConfigDetails.getName());
     }
 
     private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
@@ -203,7 +203,7 @@ public class GithubService {
         {
             sprPropertyDetails.setDeleted(false);
         }
-        propertyService.saveProperty(sprPropertyDetails, collectionName, "key", sprPropertyDetails.getKey());
+        propertyService.save(sprPropertyDetails, collectionName, "key", sprPropertyDetails.getKey());
     }
 
     private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
@@ -228,7 +228,7 @@ public class GithubService {
         {
             partnerLevelConfigBean.setDeleted(false);
         }
-        propertyService.saveProperty(partnerLevelConfigBean, collectionName, uniqueFieldNames, uniqueFields);
+        propertyService.save(partnerLevelConfigBean, collectionName, uniqueFieldNames, uniqueFields);
     }
 
     private Map<String, Object> convertJsonNodeToMap(JsonNode jsonNode) {

@@ -5,6 +5,9 @@ import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
 import com.webhook.dynamicproperty.model.SprinklrProperty;
+
+import io.micrometer.observation.annotation.Observed;
+
 import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -26,33 +29,14 @@ public class PropertyServiceImplements implements PropertyService {
     }
 
     @Override
-    public String saveProperty(DynamicPropertyDetails dynamicPropertyDetails, String collectionName, String uniqueFieldName, String uniqueField) {
-        return save(dynamicPropertyDetails, collectionName, uniqueFieldName, uniqueField);
-    }
-
-    @Override
-    public String saveProperty(ServerConfigDetails serverConfigDetails, String collectionName, String uniqueFieldName, String uniqueField) {
-        return save(serverConfigDetails, collectionName, uniqueFieldName, uniqueField);
-    }
-
-    @Override
-    public String saveProperty(SprPropertyDetails sprPropertyDetails, String collectionName, String uniqueFieldName, String uniqueField) {
-        return save(sprPropertyDetails, collectionName, uniqueFieldName, uniqueField);
-    }
-
-    @Override
-    public String saveProperty(PartnerLevelConfigBeanDetails partnerLevelConfigBeanDetails, String collectionName, List<String> uniqueFieldNames, List<String> uniqueFields) {
-        return save(partnerLevelConfigBeanDetails, collectionName, uniqueFieldNames, uniqueFields);
-    }
-
-    private String save(SprinklrProperty property, String collectionName, String uniqueFieldName,String uniqueField) {
+    public String save(SprinklrProperty property, String collectionName, String uniqueFieldName,String uniqueField) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
         findAndModify(mongoTemplate, property, collectionName, uniqueFieldName, property.getModifiedDateTime(),uniqueField);
         
         return "saved";
     }
-
-    private String save(SprinklrProperty property, String collectionName, List<String> uniqueFieldNames,List<String> uniqueFields) {
+    @Override
+    public String save(SprinklrProperty property, String collectionName, List<String> uniqueFieldNames,List<String> uniqueFields) {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase();
         findAndModify(mongoTemplate, property, collectionName, uniqueFieldNames, property.getModifiedDateTime(),uniqueFields);
         return "saved";
