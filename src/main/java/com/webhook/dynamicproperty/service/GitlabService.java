@@ -49,7 +49,7 @@ public class GitlabService {
 
     public void processWebhookPayload(JsonNode jsonNode) {
         try {
-            // System.out.println(jsonNode);
+            
             String prevCommit= jsonNode.get("before").asText();
             JsonNode commits = jsonNode.get("commits");
 
@@ -61,9 +61,18 @@ public class GitlabService {
                 OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(),
                         DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-                processFiles(addedFiles, commitId, localDateTime,false);
-                processFiles(modifiedFiles, commitId, localDateTime,false);
-                processFiles(removedFiles, prevCommit, localDateTime,true);
+                for(JsonNode file : addedFiles)
+                {
+                    processFiles(file.asText(), commitId, localDateTime,false);
+                }
+                for(JsonNode file : modifiedFiles)
+                {
+                    processFiles(file.asText(), commitId, localDateTime,false);
+                }
+                for(JsonNode file : removedFiles)
+                {
+                    processFiles(file.asText(), prevCommit, localDateTime,true);
+                }
                 Commits.add(commitId);
             }
         } catch (Exception e) {
@@ -71,19 +80,18 @@ public class GitlabService {
         }
     }
 
-    public void processFiles(JsonNode files, String commitId, LocalDateTime commitTime,boolean isRemoved) {
-        for (JsonNode file : files) {
-            String filePath = file.asText();
+    public void processFiles(String filePath, String commitId, LocalDateTime commitTime,boolean isRemoved) {
+       
             String[] filesPathSplit = filePath.split("/");
             if (filesPathSplit.length < 4) {
                 if (filesPathSplit.length == 3) {
                     processGlobalFiles(filesPathSplit, commitId, commitTime,isRemoved);
                 }
-                continue;
+                return;
             }
             String databaseName = filesPathSplit[2];
             if (!databaseName.equals(activeProfile)) {
-                continue;
+                return;
             }
             String collectionName = filesPathSplit[1];
             String filepath = String.join("%2F", filesPathSplit);
@@ -91,7 +99,7 @@ public class GitlabService {
 
             JsonNode content = fetchFileContent(url);
             if (content == null) {
-                continue;
+                return;
             }
 
             switch (collectionName) {
@@ -110,7 +118,7 @@ public class GitlabService {
                 default:
                     logger.warn("Unknown collection: {}", collectionName);
             }
-        }
+        
     }
 
     private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime,boolean isRemoved) {
