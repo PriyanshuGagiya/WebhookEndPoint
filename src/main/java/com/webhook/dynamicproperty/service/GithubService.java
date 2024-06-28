@@ -46,6 +46,7 @@ public class GithubService {
     private String githubDownloadUrl;
 
     public void processWebhookPayload(JsonNode jsonNode) {
+
         try {
             JsonNode commits = jsonNode.get("commits");
 
@@ -53,11 +54,12 @@ public class GithubService {
                 String commitId = commit.get("id").asText();
                 JsonNode addedFiles = commit.get("added");
                 JsonNode modifiedFiles = commit.get("modified");
-
+                JsonNode removedFiles = commit.get("removed");
                 OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-                processFiles(addedFiles, commitId, localDateTime);
-                processFiles(modifiedFiles, commitId, localDateTime);
+                processFiles(addedFiles, commitId, localDateTime,false);
+                processFiles(modifiedFiles, commitId, localDateTime,false);
+                processFiles(removedFiles,jsonNode.get("before").asText(), localDateTime,true);
                 Commits.add(commitId);
             }
         } catch (Exception e) {
@@ -65,13 +67,13 @@ public class GithubService {
         }
     }
 
-    public void processFiles(JsonNode files, String commitId, LocalDateTime commitTime) {
+    public void processFiles(JsonNode files, String commitId, LocalDateTime commitTime,boolean isRemoved) {
         for (JsonNode file : files) {
             String filePath = file.asText();
             String[] filesPathSplit = filePath.split("/");
             if (filesPathSplit.length < 4) {
                 if (filesPathSplit.length == 3) {
-                    processGlobalFiles(filesPathSplit, commitId, commitTime);
+                    processGlobalFiles(filesPathSplit, commitId, commitTime,isRemoved);
                 }
                 continue;
             }
@@ -89,16 +91,16 @@ public class GithubService {
 
             switch (collectionName) {
                 case "dynamicProperty":
-                    handleDynamicProperty(commitTime, collectionName, content);
+                    handleDynamicProperty(commitTime, collectionName, content,isRemoved);
                     break;
                 case "serverConfig":
-                    handleServerConfig(commitTime, collectionName, content);
+                    handleServerConfig(commitTime, collectionName, content,isRemoved);
                     break;
                 case "sprProperty":
-                    handleSprProperty(commitTime, collectionName, content);
+                    handleSprProperty(commitTime, collectionName, content,isRemoved);
                     break;
                 case "partnerLevelConfigBean":
-                    handlePartnerLevelConfigBean(commitTime, collectionName, content);
+                    handlePartnerLevelConfigBean(commitTime, collectionName, content,isRemoved);
                     break;
                 default:
                     logger.warn("Unknown collection: {}", collectionName);
@@ -106,7 +108,7 @@ public class GithubService {
         }
     }
 
-    private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime) {
+    private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime,boolean isRemoved) {
         String collectionName = filesPathSplit[1];
         String url = githubDownloadUrl + commitId + "/" + filesPathSplit[0] + "/" + filesPathSplit[1] + "/" + filesPathSplit[2];
         JsonNode content = fetchFileContent(url);
@@ -115,16 +117,16 @@ public class GithubService {
         }
         switch (collectionName) {
             case "dynamicProperty":
-                handleDynamicProperty(commitTime, collectionName, content);
+                handleDynamicProperty(commitTime, collectionName, content,isRemoved);
                 break;
             case "serverConfig":
-                handleServerConfig(commitTime, collectionName, content);
+                handleServerConfig(commitTime, collectionName, content,isRemoved);
                 break;
             case "sprProperty":
-                handleSprProperty(commitTime, collectionName, content);
+                handleSprProperty(commitTime, collectionName, content,isRemoved);
                 break;
             case "partnerLevelConfigBean":
-                handlePartnerLevelConfigBean(commitTime, collectionName, content);
+                handlePartnerLevelConfigBean(commitTime, collectionName, content,isRemoved);
                 break;
             default:
                 logger.warn("Unknown collection: {}", collectionName);
@@ -146,18 +148,25 @@ public class GithubService {
         }
     }
 
-    private void handleDynamicProperty(LocalDateTime commitTime, String collectionName, JsonNode content) {
+    private void handleDynamicProperty(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
         DynamicPropertyDetails dynamicPropertyDetails = new DynamicPropertyDetails();
         dynamicPropertyDetails.setModifiedDate(commitTime);
         dynamicPropertyDetails.setKey(content.get("key").asText());
         dynamicPropertyDetails.setProperty(content.get("property").asText());
         dynamicPropertyDetails.setValue(content.get("value").asText());
         dynamicPropertyDetails.setReason(content.get("reason").asText());
-        dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
+        if(isRemoved)
+        {
+            dynamicPropertyDetails.setDeleted(true);
+        }
+        else
+        {
+            dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
+        }
         propertyService.saveProperty(dynamicPropertyDetails, collectionName, "key", dynamicPropertyDetails.getKey());
     }
 
-    private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content) {
+    private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
         ServerConfigDetails serverConfigDetails = new ServerConfigDetails();
         serverConfigDetails.setModifiedDate(commitTime);
         serverConfigDetails.setDbName(content.get("dbName").asText());
@@ -168,20 +177,36 @@ public class GithubService {
         serverConfigDetails.setServerType(content.get("serverType").asText());
         serverConfigDetails.setName(content.get("name").asText());
         serverConfigDetails.set_class(content.get("_class").asText());
+        if(isRemoved)
+        {
+            serverConfigDetails.setDeleted(true);
+        }
+        else
+        {
+            serverConfigDetails.setDeleted(false);
+        }
         propertyService.saveProperty(serverConfigDetails, collectionName, "name", serverConfigDetails.getName());
     }
 
-    private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content) {
+    private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
         SprPropertyDetails sprPropertyDetails = new SprPropertyDetails();
         sprPropertyDetails.setModifiedDate(commitTime);
         sprPropertyDetails.setKey(content.get("key").asText());
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
+        if(isRemoved)
+        {
+            sprPropertyDetails.setDeleted(true);
+        }
+        else
+        {
+            sprPropertyDetails.setDeleted(false);
+        }
         propertyService.saveProperty(sprPropertyDetails, collectionName, "key", sprPropertyDetails.getKey());
     }
 
-    private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content) {
+    private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
         PartnerLevelConfigBeanDetails partnerLevelConfigBean = new PartnerLevelConfigBeanDetails();
         partnerLevelConfigBean.setModifiedDate(commitTime);
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));
@@ -195,6 +220,14 @@ public class GithubService {
         uniqueFields.add((String) config.get("module"));
         uniqueFields.add((String) config.get("type"));
         uniqueFields.add((String) config.get("configClassName"));
+        if(isRemoved)
+        {
+            partnerLevelConfigBean.setDeleted(true);
+        }
+        else
+        {
+            partnerLevelConfigBean.setDeleted(false);
+        }
         propertyService.saveProperty(partnerLevelConfigBean, collectionName, uniqueFieldNames, uniqueFields);
     }
 

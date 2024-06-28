@@ -22,6 +22,7 @@ public class SprPropertyDetails implements SprinklrProperty
     private String value;
     private boolean isSecure;
     private String _class;
+    private boolean deleted;
     @CreatedDate
     private LocalDateTime createdDate;
     @LastModifiedDate
@@ -37,6 +38,7 @@ public class SprPropertyDetails implements SprinklrProperty
         update.setOnInsert("_class", _class);
         update.setOnInsert("createdDate", createdDateTime);
         update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("deleted", deleted);
         return update;
     }
 
@@ -48,6 +50,7 @@ public class SprPropertyDetails implements SprinklrProperty
         update.set("value", value);
         update.set("isSecure", isSecure);
         update.set("modifiedDate", modifiedDate);
+        update.set("deleted", deleted);
         return update;
     }
     @Override
@@ -55,5 +58,5 @@ public class SprPropertyDetails implements SprinklrProperty
     {
         return modifiedDate;
     }
-    
+
 }

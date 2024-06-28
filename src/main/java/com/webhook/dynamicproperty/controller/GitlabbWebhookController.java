@@ -16,7 +16,6 @@ public class GitlabbWebhookController {
 
     @PostMapping("/gitlab")
     public void gitWebhook(@RequestBody JsonNode jsonNode) {
-      //  System.out.println(jsonNode);
         gitlabService.processWebhookPayload(jsonNode);
     }
 }

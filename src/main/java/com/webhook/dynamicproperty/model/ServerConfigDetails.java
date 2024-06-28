@@ -22,6 +22,7 @@ public class ServerConfigDetails implements SprinklrProperty
     private long clientId;
     private String serverCategory;
     private String serverType;
+    private boolean deleted;
     @Indexed(unique = true)
     private String name;
     private String _class;
@@ -45,6 +46,7 @@ public class ServerConfigDetails implements SprinklrProperty
         update.setOnInsert("_class", _class);
         update.setOnInsert("createdDate", createdDateTime);
         update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("deleted", deleted);
         return update;
     }
 
@@ -62,6 +64,7 @@ public class ServerConfigDetails implements SprinklrProperty
         update.set("name", name);
         update.set("_class", _class);
         update.set("modifiedDate", modifiedDate);
+        update.set("deleted", deleted);
         return update;
     }
     @Override

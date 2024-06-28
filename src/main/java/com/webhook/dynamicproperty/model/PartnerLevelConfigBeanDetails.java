@@ -19,6 +19,7 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
     private String id;
     private Map<String, Object> config;
     private String _class;
+    private boolean deleted;
     @CreatedDate
     private LocalDateTime createdDate;
     @LastModifiedDate
@@ -32,6 +33,7 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
         update.setOnInsert("_class", _class);
         update.setOnInsert("createdDate", createdDateTime);
         update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("deleted", deleted);
         return update;
     }
 
@@ -42,6 +44,7 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
         update.set("config", config);
         update.set("_class", _class);
         update.set("modifiedDate", modifiedDate);
+        update.set("deleted", deleted);
         return update;
     }
     @Override
@@ -49,5 +52,5 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
     {
         return modifiedDate;
     }
-    
+
 }
