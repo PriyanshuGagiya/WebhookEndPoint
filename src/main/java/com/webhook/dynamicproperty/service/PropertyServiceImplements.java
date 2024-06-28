@@ -1,14 +1,8 @@
 package com.webhook.dynamicproperty.service;
 
 import com.webhook.dynamicproperty.config.MongoConfig;
-import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
-import com.webhook.dynamicproperty.model.ServerConfigDetails;
-import com.webhook.dynamicproperty.model.SprPropertyDetails;
 import com.webhook.dynamicproperty.model.SprinklrProperty;
 
-import io.micrometer.observation.annotation.Observed;
-
-import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;

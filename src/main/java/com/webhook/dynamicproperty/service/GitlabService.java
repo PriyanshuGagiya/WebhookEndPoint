@@ -6,15 +6,17 @@ import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,8 +35,8 @@ public class GitlabService {
 
     private HashSet<String> Commits = new HashSet<>();
 
-    // @Autowired
-    // private RestTemplate restTemplate;
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Value("${spring.profiles.active}")
     private String activeProfile;
@@ -139,16 +141,11 @@ public class GitlabService {
 
     private JsonNode fetchFileContent(String url) {
         try {
-            OkHttpClient client = new OkHttpClient().newBuilder()
-                    .build();
-            Request request = new Request.Builder()
-                    .url(url)
-                    .method("GET", null)
-                    .addHeader("PRIVATE-TOKEN", gitlabToken)
-                     .build();
-            Response response = client.newCall(request).execute();
-            String yamlContent = response.body().string();
-           
+           HttpHeaders headers = new HttpHeaders();
+              headers.set("PRIVATE-TOKEN", gitlabToken);
+            HttpEntity<String> entity = new HttpEntity<String>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            String yamlContent = response.getBody();
             return yamlToJsonService.convertYamlToJson(yamlContent);
         } catch (Exception e) 
         {
