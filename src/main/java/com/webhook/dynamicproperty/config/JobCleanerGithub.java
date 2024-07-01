@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class JobCleanerGithub {
     private String commitDetailsApi;
 
     @Autowired
-    private  RestTemplate restTemplate;
+    private RestTemplate restTemplate;
     @Autowired
     private GithubService githubService;
     private LocalDateTime prev;
@@ -51,15 +52,13 @@ public class JobCleanerGithub {
 
     @Scheduled(fixedRate = 30000)
     public void robustnessCheck() {
-        
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         String formattedPrev = formatDateTime(prev);
         String formattedNow = formatDateTime(now);
         String completeGithubApi = githubApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-       // System.out.println(completeGithubApi);
         logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
         List<JsonNode> commits = fetchCommits(completeGithubApi);
-        
+
         if (commits != null) {
             for (JsonNode commit : commits) {
                 processCommit(commit);
@@ -86,44 +85,68 @@ public class JobCleanerGithub {
             System.out.println("Commit details are null");
             return;
         }
-        JsonNode Files=commitDetails.get("files");
-        for(JsonNode file : Files)
-        {
-            boolean isRemoved=file.get("status").asText().equals("removed");
-            String filename=file.get("filename").asText();
-            if(isRemoved)
-            {
-                String raw_url=file.get("raw_url").asText();
-                String[] parts=raw_url.split("/");
-                String sha=parts[parts.length-2];
+        JsonNode files = commitDetails.get("files");
+        for (JsonNode file : files) {
+            boolean isRemoved = file.get("status").asText().equals("removed");
+            String filename = file.get("filename").asText();
+            if (isRemoved) {
+                String rawUrl = file.get("raw_url").asText();
+                String[] parts = rawUrl.split("/");
+                String sha = parts[parts.length - 2];
                 githubService.processFiles(filename, sha, localCommitDateTime, isRemoved);
+            } else {
+                githubService.processFiles(filename, commitSha, localCommitDateTime, isRemoved);
             }
-            else
-            {
-                 githubService.processFiles(filename,commitSha,localCommitDateTime,isRemoved);
-            }
-            
         }
-
     }
 
     private List<JsonNode> fetchCommits(String url) {
+        List<JsonNode> allCommits = new ArrayList<>();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(githubToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        try {
-            ResponseEntity<List<JsonNode>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<List<JsonNode>>() {});
+        while (url != null) {
+            try {
+                ResponseEntity<List<JsonNode>> response = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        entity,
+                        new ParameterizedTypeReference<List<JsonNode>>() {
+                        });
 
-            return response.getBody();
-        } catch (Exception e) {
-            logger.error("Error fetching commits from GitHub API: {}", e.getMessage());
+                List<JsonNode> commits = response.getBody();
+                if (commits != null) {
+                    allCommits.addAll(commits);
+                }
+
+                url = getNextPageUrl(response.getHeaders());
+            } catch (Exception e) {
+                logger.error("Error fetching commits from GitHub API: {}", e.getMessage());
+                break;
+            }
+        }
+
+        return allCommits;
+    }
+
+    private String getNextPageUrl(HttpHeaders headers) {
+        List<String> linkHeaders = headers.get("Link");
+        if (linkHeaders == null || linkHeaders.isEmpty()) {
             return null;
         }
+
+        for (String linkHeader : linkHeaders) {
+            String[] links = linkHeader.split(", ");
+            for (String link : links) {
+                String[] parts = link.split("; ");
+                if (parts.length == 2 && parts[1].equals("rel=\"next\"")) {
+                    return parts[0].substring(1, parts[0].length() - 1);
+                }
+            }
+        }
+
+        return null;
     }
 
     private JsonNode fetchCommitDetails(String sha) {
@@ -131,7 +154,6 @@ public class JobCleanerGithub {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(githubToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
-
 
         try {
             ResponseEntity<JsonNode> response = restTemplate.exchange(
