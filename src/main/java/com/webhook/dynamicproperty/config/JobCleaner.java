@@ -49,14 +49,15 @@ public class JobCleaner {
         this.prev = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    @Scheduled(fixedRate = 6000)
+    @Scheduled(fixedRate = 30000)
     public void robustnessCheck() {
-        System.out.println("hello");
+        
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         String formattedPrev = formatDateTime(prev);
         String formattedNow = formatDateTime(now);
         String completeGithubApi = githubApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-        System.out.println("Fetching commits from " + formattedPrev + " to " + formattedNow);
+        completeGithubApi="https://api.github.com/repos/PriyanshuGagiya/DP/commits?since=2024-07-01T05:28:18.650077Z&until=2024-07-01T05:28:48.644768Z&sha=main";
+        System.out.println(completeGithubApi);
         logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
         List<JsonNode> commits = fetchCommits(completeGithubApi);
         
@@ -86,11 +87,22 @@ public class JobCleaner {
             System.out.println("Commit details are null");
             return;
         }
-        JsonNode Files=commitDetails.path("files");
+        JsonNode Files=commitDetails.get("files");
         for(JsonNode file : Files)
         {
-            boolean isRemoved=file.path("status").asText().equals("removed");
-            githubService.processFiles(file.get("filename").asText(), commitSha, localCommitDateTime, isRemoved);
+            boolean isRemoved=file.get("status").asText().equals("removed");
+            String filename=file.get("filename").asText();
+            if(isRemoved)
+            {
+                String raw_url=file.get("raw_url").asText();
+                String[] parts=raw_url.split("/");
+                String sha=parts[parts.length-2];
+                githubService.processFiles(filename, sha, localCommitDateTime, isRemoved);
+            }
+            else
+            {
+                 githubService.processFiles(filename,commitSha,localCommitDateTime,isRemoved);
+            }
             
         }
 
