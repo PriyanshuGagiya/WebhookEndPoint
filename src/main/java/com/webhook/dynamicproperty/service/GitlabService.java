@@ -6,15 +6,20 @@ import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
 
+import okhttp3.OkHttpClient;
+
+import okhttp3.Request;
+import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+// import org.springframework.http.HttpEntity;
+// import org.springframework.http.HttpHeaders;
+// import org.springframework.http.HttpMethod;
+// import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -35,8 +40,8 @@ public class GitlabService {
 
     private HashSet<String> Commits = new HashSet<>();
 
-    @Autowired
-    private RestTemplate restTemplate;
+    // @Autowired
+    // private RestTemplate restTemplate;
 
     @Value("${spring.profiles.active}")
     private String activeProfile;
@@ -49,8 +54,8 @@ public class GitlabService {
 
     public void processWebhookPayload(JsonNode jsonNode) {
         try {
-            
-            String prevCommit= jsonNode.get("before").asText();
+
+            String prevCommit = jsonNode.get("before").asText();
             JsonNode commits = jsonNode.get("commits");
 
             for (JsonNode commit : commits) {
@@ -61,17 +66,14 @@ public class GitlabService {
                 OffsetDateTime offsetDateTime = OffsetDateTime.parse(commit.get("timestamp").asText(),
                         DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-                for(JsonNode file : addedFiles)
-                {
-                    processFiles(file.asText(), commitId, localDateTime,false);
+                for (JsonNode file : addedFiles) {
+                    processFiles(file.asText(), commitId, localDateTime, false);
                 }
-                for(JsonNode file : modifiedFiles)
-                {
-                    processFiles(file.asText(), commitId, localDateTime,false);
+                for (JsonNode file : modifiedFiles) {
+                    processFiles(file.asText(), commitId, localDateTime, false);
                 }
-                for(JsonNode file : removedFiles)
-                {
-                    processFiles(file.asText(), prevCommit, localDateTime,true);
+                for (JsonNode file : removedFiles) {
+                    processFiles(file.asText(), prevCommit, localDateTime, true);
                 }
                 Commits.add(commitId);
             }
@@ -80,67 +82,69 @@ public class GitlabService {
         }
     }
 
-    public void processFiles(String filePath, String commitId, LocalDateTime commitTime,boolean isRemoved) {
-       
-            String[] filesPathSplit = filePath.split("/");
-            if (filesPathSplit.length < 4) {
-                if (filesPathSplit.length == 3) {
-                    processGlobalFiles(filesPathSplit, commitId, commitTime,isRemoved);
-                }
-                return;
-            }
-            String databaseName = filesPathSplit[2];
-            if (!databaseName.equals(activeProfile)) {
-                return;
-            }
-            String collectionName = filesPathSplit[1];
-            String filepath = String.join("%2F", filesPathSplit);
-            String url = gitlabDownloadUrl + filepath + "/raw?ref=" + commitId;
+    public void processFiles(String filePath, String commitId, LocalDateTime commitTime, boolean isRemoved) {
 
-            JsonNode content = fetchFileContent(url);
-            if (content == null) {
-                return;
+        String[] filesPathSplit = filePath.split("/");
+        if (filesPathSplit.length < 4) {
+            if (filesPathSplit.length == 3) {
+                processGlobalFiles(filesPathSplit, commitId, commitTime, isRemoved);
             }
+            return;
+        }
+        String databaseName = filesPathSplit[2];
+        if (!databaseName.equals(activeProfile)) {
+            return;
+        }
+        String collectionName = filesPathSplit[1];
+        String filepath = String.join("%2F", filesPathSplit);
+        String url = gitlabDownloadUrl + filepath + "/raw?ref=" + commitId;
 
-            switch (collectionName) {
-                case "dynamicProperty":
-                    handleDynamicProperty(commitTime, collectionName, content,isRemoved);
-                    break;
-                case "serverConfig":
-                    handleServerConfig(commitTime, collectionName, content,isRemoved);
-                    break;
-                case "sprProperty":
-                    handleSprProperty(commitTime, collectionName, content,isRemoved);
-                    break;
-                case "partnerLevelConfigBean":
-                    handlePartnerLevelConfigBean(commitTime, collectionName, content,isRemoved);
-                    break;
-                default:
-                    logger.warn("Unknown collection: {}", collectionName);
-            }
-        
+        JsonNode content = fetchFileContent(url);
+        if (content == null) {
+            return;
+        }
+
+        switch (collectionName) {
+            case "dynamicProperty":
+                handleDynamicProperty(commitTime, collectionName, content, isRemoved);
+                break;
+            case "serverConfig":
+                handleServerConfig(commitTime, collectionName, content, isRemoved);
+                break;
+            case "sprProperty":
+                handleSprProperty(commitTime, collectionName, content, isRemoved);
+                break;
+            case "partnerLevelConfigBean":
+                handlePartnerLevelConfigBean(commitTime, collectionName, content, isRemoved);
+                break;
+            default:
+                logger.warn("Unknown collection: {}", collectionName);
+        }
+
     }
 
-    private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime,boolean isRemoved) {
+    private void processGlobalFiles(String[] filesPathSplit, String commitId, LocalDateTime commitTime,
+            boolean isRemoved) {
         String collectionName = filesPathSplit[1];
         String filepath = String.join("%2F", filesPathSplit);
         String url = gitlabDownloadUrl + filepath + "/raw?ref=" + commitId;
         JsonNode content = fetchFileContent(url);
+        System.out.println("hello");
         if (content == null) {
             return;
         }
         switch (collectionName) {
             case "dynamicProperty":
-                handleDynamicProperty(commitTime, collectionName, content,isRemoved);
+                handleDynamicProperty(commitTime, collectionName, content, isRemoved);
                 break;
             case "serverConfig":
-                handleServerConfig(commitTime, collectionName, content,isRemoved);
+                handleServerConfig(commitTime, collectionName, content, isRemoved);
                 break;
             case "sprProperty":
-                handleSprProperty(commitTime, collectionName, content,isRemoved);
+                handleSprProperty(commitTime, collectionName, content, isRemoved);
                 break;
             case "partnerLevelConfigBean":
-                handlePartnerLevelConfigBean(commitTime, collectionName, content,isRemoved);
+                handlePartnerLevelConfigBean(commitTime, collectionName, content, isRemoved);
                 break;
             default:
                 logger.warn("Unknown collection: {}", collectionName);
@@ -149,38 +153,42 @@ public class GitlabService {
 
     private JsonNode fetchFileContent(String url) {
         try {
-           HttpHeaders headers = new HttpHeaders();
-              headers.set("PRIVATE-TOKEN", gitlabToken);
-            HttpEntity<String> entity = new HttpEntity<String>(headers);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-            String yamlContent = response.getBody();
+            OkHttpClient client = new OkHttpClient().newBuilder()
+                    .build();
+            Request request = new Request.Builder()
+                    .url(url)
+                    .method("GET", null)
+                    .addHeader("PRIVATE-TOKEN", gitlabToken)
+                    .build();
+            Response response = client.newCall(request).execute();
+            String yamlContent = response.body().string();
+
             return yamlToJsonService.convertYamlToJson(yamlContent);
-        } catch (Exception e) 
-        {
+        } catch (Exception e) {
+            System.out.println(url);
             System.out.println("Error fetching file content from GitLab API: " + e.getMessage());
             return null;
         }
     }
 
-    private void handleDynamicProperty(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
+    private void handleDynamicProperty(LocalDateTime commitTime, String collectionName, JsonNode content,
+            boolean isRemoved) {
         DynamicPropertyDetails dynamicPropertyDetails = new DynamicPropertyDetails();
         dynamicPropertyDetails.setModifiedDate(commitTime);
         dynamicPropertyDetails.setKey(content.get("key").asText());
         dynamicPropertyDetails.setProperty(content.get("property").asText());
         dynamicPropertyDetails.setValue(content.get("value").asText());
         dynamicPropertyDetails.setReason(content.get("reason").asText());
-        if(isRemoved)
-        {
+        if (isRemoved) {
             dynamicPropertyDetails.setDeleted(true);
-        }
-        else
-        {
+        } else {
             dynamicPropertyDetails.setDeleted(content.get("deleted").asBoolean());
         }
         propertyService.save(dynamicPropertyDetails, collectionName, "key", dynamicPropertyDetails.getKey());
     }
 
-    private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
+    private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content,
+            boolean isRemoved) {
         ServerConfigDetails serverConfigDetails = new ServerConfigDetails();
         serverConfigDetails.setModifiedDate(commitTime);
         serverConfigDetails.setDbName(content.get("dbName").asText());
@@ -191,22 +199,24 @@ public class GitlabService {
         serverConfigDetails.setServerType(content.get("serverType").asText());
         serverConfigDetails.setName(content.get("name").asText());
         serverConfigDetails.set_class(content.get("_class").asText());
-        serverConfigDetails.setDeleted(content.get("deleted").asBoolean());
+        serverConfigDetails.setDeleted(isRemoved);
         propertyService.save(serverConfigDetails, collectionName, "name", serverConfigDetails.getName());
     }
 
-    private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
+    private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content,
+            boolean isRemoved) {
         SprPropertyDetails sprPropertyDetails = new SprPropertyDetails();
         sprPropertyDetails.setModifiedDate(commitTime);
         sprPropertyDetails.setKey(content.get("key").asText());
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
         sprPropertyDetails.set_class(content.get("_class").asText());
-        sprPropertyDetails.setDeleted(content.get("deleted").asBoolean());
+        sprPropertyDetails.setDeleted(isRemoved);
         propertyService.save(sprPropertyDetails, collectionName, "key", sprPropertyDetails.getKey());
     }
 
-    private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content,boolean isRemoved) {
+    private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content,
+            boolean isRemoved) {
         PartnerLevelConfigBeanDetails partnerLevelConfigBean = new PartnerLevelConfigBeanDetails();
         partnerLevelConfigBean.setModifiedDate(commitTime);
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));
@@ -220,7 +230,7 @@ public class GitlabService {
         uniqueFields.add((String) config.get("module"));
         uniqueFields.add((String) config.get("type"));
         uniqueFields.add((String) config.get("configClassName"));
-        partnerLevelConfigBean.setDeleted(content.get("deleted").asBoolean());
+        partnerLevelConfigBean.setDeleted(isRemoved);
         propertyService.save(partnerLevelConfigBean, collectionName, uniqueFieldNames, uniqueFields);
     }
 
@@ -255,9 +265,11 @@ public class GitlabService {
         });
         return map;
     }
+
     public boolean containsCommit(String commitId) {
         return Commits.contains(commitId);
     }
+
     public void removeCommit(String commitId) {
         Commits.remove(commitId);
     }
