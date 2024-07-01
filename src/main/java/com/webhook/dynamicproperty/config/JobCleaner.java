@@ -56,8 +56,7 @@ public class JobCleaner {
         String formattedPrev = formatDateTime(prev);
         String formattedNow = formatDateTime(now);
         String completeGithubApi = githubApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-        completeGithubApi="https://api.github.com/repos/PriyanshuGagiya/DP/commits?since=2024-07-01T05:28:18.650077Z&until=2024-07-01T05:28:48.644768Z&sha=main";
-        System.out.println(completeGithubApi);
+        
         logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
         List<JsonNode> commits = fetchCommits(completeGithubApi);
         
