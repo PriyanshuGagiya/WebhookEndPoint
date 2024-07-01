@@ -27,9 +27,9 @@ public class ServerConfigDetails implements SprinklrProperty
     private String name;
     private String _class;
     @CreatedDate
-    private LocalDateTime createdDate;
+    private LocalDateTime createdDateTime;
     @LastModifiedDate
-    private LocalDateTime modifiedDate;
+    private LocalDateTime modifiedDateTime;
 
     @Override
     public
@@ -44,8 +44,8 @@ public class ServerConfigDetails implements SprinklrProperty
         update.setOnInsert("serverType", serverType);
         update.setOnInsert("name", name);
         update.setOnInsert("_class", _class);
-        update.setOnInsert("createdDate", createdDateTime);
-        update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("createdDateTime", createdDateTime);
+        update.setOnInsert("modifiedDateTime", createdDateTime);
         update.setOnInsert("deleted", deleted);
         return update;
     }
@@ -63,14 +63,14 @@ public class ServerConfigDetails implements SprinklrProperty
         update.set("serverType", serverType);
         update.set("name", name);
         update.set("_class", _class);
-        update.set("modifiedDate", modifiedDate);
+        update.set("modifiedDateTime", modifiedDateTime);
         update.set("deleted", deleted);
         return update;
     }
     @Override
     public LocalDateTime getModifiedDateTime()
     {
-        return modifiedDate;
+        return modifiedDateTime;
     }
 
 }

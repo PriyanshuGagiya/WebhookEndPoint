@@ -26,9 +26,9 @@ public class DynamicPropertyDetails implements SprinklrProperty
     private String reason;
     private boolean deleted;
     @CreatedDate
-    private LocalDateTime createdDate;
+    private LocalDateTime createdDateTime;
     @LastModifiedDate
-    private LocalDateTime modifiedDate;
+    private LocalDateTime modifiedDateTime;
 
     @Override
     public Update createUpdateFromPropertyOninsert(LocalDateTime createdDateTime)
@@ -39,8 +39,8 @@ public class DynamicPropertyDetails implements SprinklrProperty
         update.setOnInsert("value", value);
         update.setOnInsert("reason", reason);
         update.setOnInsert("deleted", deleted);
-        update.setOnInsert("createdDate", createdDateTime);
-        update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("createdDateTime", createdDateTime);
+        update.setOnInsert("modifiedDateTime", createdDateTime);
         return update;
     }
 
@@ -53,14 +53,14 @@ public class DynamicPropertyDetails implements SprinklrProperty
         update.set("value", value);
         update.set("reason", reason);
         update.set("deleted", deleted);
-        update.set("modifiedDate", modifiedDate);
+        update.set("modifiedDate", modifiedDateTime);
         return update;
     }
 
     @Override
     public LocalDateTime getModifiedDateTime()
     {
-        return modifiedDate;
+        return modifiedDateTime;
     }
     
 }

@@ -21,9 +21,9 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
     private String _class;
     private boolean deleted;
     @CreatedDate
-    private LocalDateTime createdDate;
+    private LocalDateTime createdDateTime;
     @LastModifiedDate
-    private LocalDateTime modifiedDate;
+    private LocalDateTime modifiedDateTime;
 
     @Override
     public Update createUpdateFromPropertyOninsert(LocalDateTime createdDateTime)
@@ -31,8 +31,8 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
         Update update = new Update();
         update.setOnInsert("config", config);
         update.setOnInsert("_class", _class);
-        update.setOnInsert("createdDate", createdDateTime);
-        update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("createdDateTime", createdDateTime);
+        update.setOnInsert("modifiedDateTime", createdDateTime);
         update.setOnInsert("deleted", deleted);
         return update;
     }
@@ -43,14 +43,14 @@ public class PartnerLevelConfigBeanDetails implements SprinklrProperty
         Update update = new Update();
         update.set("config", config);
         update.set("_class", _class);
-        update.set("modifiedDate", modifiedDate);
+        update.set("modifiedDateTime", modifiedDateTime);
         update.set("deleted", deleted);
         return update;
     }
     @Override
     public LocalDateTime getModifiedDateTime()
     {
-        return modifiedDate;
+        return modifiedDateTime;
     }
 
 }

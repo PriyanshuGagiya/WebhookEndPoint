@@ -24,9 +24,9 @@ public class SprPropertyDetails implements SprinklrProperty
     private String _class;
     private boolean deleted;
     @CreatedDate
-    private LocalDateTime createdDate;
+    private LocalDateTime createdDateTime;
     @LastModifiedDate
-    private LocalDateTime modifiedDate;
+    private LocalDateTime modifiedDateTime;
 
     @Override
     public Update createUpdateFromPropertyOninsert(LocalDateTime createdDateTime)
@@ -36,8 +36,8 @@ public class SprPropertyDetails implements SprinklrProperty
         update.setOnInsert("value", value);
         update.setOnInsert("isSecure", isSecure);
         update.setOnInsert("_class", _class);
-        update.setOnInsert("createdDate", createdDateTime);
-        update.setOnInsert("modifiedDate", createdDateTime);
+        update.setOnInsert("createdDateTime", createdDateTime);
+        update.setOnInsert("modifiedDateTime", createdDateTime);
         update.setOnInsert("deleted", deleted);
         return update;
     }
@@ -49,14 +49,14 @@ public class SprPropertyDetails implements SprinklrProperty
         update.set("key", key);
         update.set("value", value);
         update.set("isSecure", isSecure);
-        update.set("modifiedDate", modifiedDate);
+        update.set("modifiedDateTime", modifiedDateTime);
         update.set("deleted", deleted);
         return update;
     }
     @Override
     public LocalDateTime getModifiedDateTime()
     {
-        return modifiedDate;
+        return modifiedDateTime;
     }
 
 }

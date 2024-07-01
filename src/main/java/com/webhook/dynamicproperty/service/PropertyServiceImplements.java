@@ -36,24 +36,26 @@ public class PropertyServiceImplements implements PropertyService {
         return "saved";
     }
 
-    private void findAndModify(MongoTemplate mongoTemplate, SprinklrProperty property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDate,String uniqueField) 
+    private void findAndModify(MongoTemplate mongoTemplate, SprinklrProperty property, String collectionName, String uniqueFieldName, LocalDateTime modifiedDateTime,String uniqueField) 
     {
         Query query = new Query();
         Criteria criteria = Criteria.where(uniqueFieldName).is(uniqueField);
         query.addCriteria(criteria);
-        Update update = property.createUpdateFromPropertyOninsert(modifiedDate);
-        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
-        
-        query = new Query();
-        criteria= new Criteria();
-        criteria= criteria.and(uniqueFieldName).is(uniqueField);
-        criteria= criteria.and("modifiedDate").lt(modifiedDate);
-        query.addCriteria(criteria);
-        update = property.createUpdateFromProperty();
-        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);
+        Update update = property.createUpdateFromPropertyOninsert(modifiedDateTime);
+        SprinklrProperty existingProperty=mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
+        if(existingProperty!=null)
+        {
+            query = new Query();
+            criteria= new Criteria();
+            criteria= criteria.and(uniqueFieldName).is(uniqueField);
+            criteria= criteria.and("modifiedDateTime").lt(modifiedDateTime);
+            query.addCriteria(criteria);
+            update = property.createUpdateFromProperty();
+            mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);
+        }
     }
 
-    private void findAndModify(MongoTemplate mongoTemplate, SprinklrProperty property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDate,List<String> uniqueFields) 
+    private void findAndModify(MongoTemplate mongoTemplate, SprinklrProperty property, String collectionName, List<String> uniqueFieldNames, LocalDateTime modifiedDateTime,List<String> uniqueFields) 
     {
         Query query = new Query();
         Criteria criteria = new Criteria();
@@ -62,19 +64,21 @@ public class PropertyServiceImplements implements PropertyService {
             criteria = criteria.and(uniqueFieldNames.get(i)).is(uniqueFields.get(i));
         }
         query.addCriteria(criteria);
-        Update update = property.createUpdateFromPropertyOninsert(modifiedDate);
-        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
-
-        query = new Query();
-        criteria = new Criteria();
-        for(int i=0;i<uniqueFieldNames.size();i++)
+        Update update = property.createUpdateFromPropertyOninsert(modifiedDateTime);
+        SprinklrProperty existingProperty=mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), property.getClass(), collectionName);
+        if(existingProperty!=null)
         {
-            criteria = criteria.and(uniqueFieldNames.get(i)).is(uniqueFields.get(i));
+            query = new Query();
+            criteria = new Criteria();
+            for(int i=0;i<uniqueFieldNames.size();i++)
+            {
+                criteria = criteria.and(uniqueFieldNames.get(i)).is(uniqueFields.get(i));
+            }
+            criteria = criteria.and("modifiedDateTime").lt(modifiedDateTime);
+            query.addCriteria(criteria);
+            update = property.createUpdateFromProperty();
+            mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);   
         }
-        criteria = criteria.and("modifiedDate").lt(modifiedDate);
-        query.addCriteria(criteria);
-        update = property.createUpdateFromProperty();
-        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(false), property.getClass(), collectionName);   
        
     }
 

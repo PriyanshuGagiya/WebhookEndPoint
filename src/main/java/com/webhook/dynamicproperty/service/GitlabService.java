@@ -174,7 +174,7 @@ public class GitlabService {
     private void handleDynamicProperty(LocalDateTime commitTime, String collectionName, JsonNode content,
             boolean isRemoved) {
         DynamicPropertyDetails dynamicPropertyDetails = new DynamicPropertyDetails();
-        dynamicPropertyDetails.setModifiedDate(commitTime);
+        dynamicPropertyDetails.setModifiedDateTime(commitTime);
         dynamicPropertyDetails.setKey(content.get("key").asText());
         dynamicPropertyDetails.setProperty(content.get("property").asText());
         dynamicPropertyDetails.setValue(content.get("value").asText());
@@ -190,7 +190,7 @@ public class GitlabService {
     private void handleServerConfig(LocalDateTime commitTime, String collectionName, JsonNode content,
             boolean isRemoved) {
         ServerConfigDetails serverConfigDetails = new ServerConfigDetails();
-        serverConfigDetails.setModifiedDate(commitTime);
+        serverConfigDetails.setModifiedDateTime(commitTime);
         serverConfigDetails.setDbName(content.get("dbName").asText());
         serverConfigDetails.setUrl(content.get("url").asText());
         serverConfigDetails.setPartnerId(content.get("partnerId").asLong());
@@ -206,7 +206,7 @@ public class GitlabService {
     private void handleSprProperty(LocalDateTime commitTime, String collectionName, JsonNode content,
             boolean isRemoved) {
         SprPropertyDetails sprPropertyDetails = new SprPropertyDetails();
-        sprPropertyDetails.setModifiedDate(commitTime);
+        sprPropertyDetails.setModifiedDateTime(commitTime);
         sprPropertyDetails.setKey(content.get("key").asText());
         sprPropertyDetails.setValue(content.get("value").asText());
         sprPropertyDetails.setSecure(content.get("isSecure").asBoolean());
@@ -218,7 +218,7 @@ public class GitlabService {
     private void handlePartnerLevelConfigBean(LocalDateTime commitTime, String collectionName, JsonNode content,
             boolean isRemoved) {
         PartnerLevelConfigBeanDetails partnerLevelConfigBean = new PartnerLevelConfigBeanDetails();
-        partnerLevelConfigBean.setModifiedDate(commitTime);
+        partnerLevelConfigBean.setModifiedDateTime(commitTime);
         Map<String, Object> config = convertJsonNodeToMap(content.get("config"));
         partnerLevelConfigBean.setConfig(config);
         partnerLevelConfigBean.set_class(content.get("_class").asText());
