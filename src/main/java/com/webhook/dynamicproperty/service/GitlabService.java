@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 // import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import org.springframework.web.client.RestTemplate;
+//import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -129,7 +129,7 @@ public class GitlabService {
         String filepath = String.join("%2F", filesPathSplit);
         String url = gitlabDownloadUrl + filepath + "/raw?ref=" + commitId;
         JsonNode content = fetchFileContent(url);
-        System.out.println("hello");
+       
         if (content == null) {
             return;
         }

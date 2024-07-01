@@ -56,9 +56,9 @@ public class JobCleanerGitlab {
         String formattedPrev = formatDateTime(prev);
         String formattedNow = formatDateTime(now);
         String completeGitlabApi = gitlabApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-        completeGitlabApi="https://gitlab.com/api/v4/projects/59307924/repository/commits?since=2024-07-01T06:37:38.093626Z&until=2024-07-01T06:38:08.110934Z&sha=main";
+        //completeGitlabApi="https://gitlab.com/api/v4/projects/59307924/repository/commits?since=2024-07-01T06:37:38.093626Z&until=2024-07-01T06:38:08.110934Z&sha=main";
         logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
-        System.out.println("url is "+completeGitlabApi);
+        // System.out.println("url is "+completeGitlabApi);
         List<JsonNode> commits = fetchCommits(completeGitlabApi);
         
         if (commits != null) {
@@ -129,7 +129,7 @@ public class JobCleanerGitlab {
     private JsonNode fetchCommitDetails(String sha) {
     
         String url = commitDetailsApi + sha+"/diff";
-        System.out.println("url is "+url);
+       
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(gitlabToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
