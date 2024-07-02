@@ -94,10 +94,6 @@ public class GitlabService {
     public Boolean processProperty(String filePath, String commitId, LocalDateTime commitTime, boolean isRemoved) {
 
         String[] filesPathSplit = filePath.split("/");
-        for(String file:filesPathSplit)
-        {
-            System.out.println(file);
-        }
         if (filesPathSplit.length < 4) 
         {
             if (filesPathSplit.length == 3) 
