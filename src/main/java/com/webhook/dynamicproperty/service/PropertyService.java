@@ -7,6 +7,6 @@ import com.webhook.dynamicproperty.model.SprinklrProperty;
 
 public interface PropertyService 
 {
-    String save(SprinklrProperty property, String collectionName, String uniqueFieldName,String uniqueField);
-    String save(SprinklrProperty property, String collectionName, List<String> uniqueFieldNames,List<String> uniqueFields);
+    Boolean save(SprinklrProperty property, String collectionName, String uniqueFieldName,String uniqueField);
+    Boolean save(SprinklrProperty property, String collectionName, List<String> uniqueFieldNames,List<String> uniqueFields);
 }

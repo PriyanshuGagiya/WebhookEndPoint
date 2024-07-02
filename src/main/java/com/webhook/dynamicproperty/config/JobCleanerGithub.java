@@ -50,7 +50,7 @@ public class JobCleanerGithub {
         prev = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 60*60*1000)
     public void robustnessCheck() {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         String formattedPrev = formatDateTime(prev);
@@ -70,6 +70,7 @@ public class JobCleanerGithub {
 
     private void processCommit(JsonNode commitNode) {
         String commitSha = commitNode.path("sha").asText();
+
         OffsetDateTime commitDateTime = OffsetDateTime.parse(
                 commitNode.path("commit").path("author").path("date").asText(),
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -82,25 +83,39 @@ public class JobCleanerGithub {
 
         JsonNode commitDetails = fetchCommitDetails(commitSha);
         if (commitDetails == null) {
-            System.out.println("Commit details are null");
+           logger.error("Error fetching commit details for {}", commitSha);
             return;
         }
         JsonNode files = commitDetails.get("files");
-        for (JsonNode file : files) {
-            boolean isRemoved = file.get("status").asText().equals("removed");
+        for (JsonNode file : files) 
+        {
+            boolean deleted = file.get("status").asText().equals("removed");
+
             String filename = file.get("filename").asText();
-            if (isRemoved) {
+
+            if (deleted) 
+            {
                 String rawUrl = file.get("raw_url").asText();
                 String[] parts = rawUrl.split("/");
                 String sha = parts[parts.length - 2];
-                githubService.processFiles(filename, sha, localCommitDateTime, isRemoved);
-            } else {
-                githubService.processFiles(filename, commitSha, localCommitDateTime, isRemoved);
+
+                if(githubService.processProperty(filename, sha, localCommitDateTime, deleted)==false)
+                {
+                    logger.error("Error processing property for {}", filename);
+                }
+            } 
+            else 
+            {
+                if(githubService.processProperty(filename, commitSha, localCommitDateTime, deleted)==false)
+                {
+                    logger.error("Error processing property for {}", filename);
+                }
             }
         }
     }
 
-    private List<JsonNode> fetchCommits(String url) {
+    private List<JsonNode> fetchCommits(String url) 
+    {
         List<JsonNode> allCommits = new ArrayList<>();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(githubToken);
@@ -130,7 +145,8 @@ public class JobCleanerGithub {
         return allCommits;
     }
 
-    private String getNextPageUrl(HttpHeaders headers) {
+    private String getNextPageUrl(HttpHeaders headers) 
+    {
         List<String> linkHeaders = headers.get("Link");
         if (linkHeaders == null || linkHeaders.isEmpty()) {
             return null;

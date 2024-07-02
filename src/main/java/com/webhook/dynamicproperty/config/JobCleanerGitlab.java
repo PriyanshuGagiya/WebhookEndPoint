@@ -49,16 +49,16 @@ public class JobCleanerGitlab {
         prev = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 60*60*1000)
     public void robustnessCheck() {
         
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         String formattedPrev = formatDateTime(prev);
         String formattedNow = formatDateTime(now);
         String completeGitlabApi = gitlabApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
-        //completeGitlabApi="https://gitlab.com/api/v4/projects/59307924/repository/commits?since=2024-07-01T06:37:38.093626Z&until=2024-07-01T06:38:08.110934Z&sha=main";
+        
         logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
-        // System.out.println("url is "+completeGitlabApi);
+       
         List<JsonNode> commits = fetchCommits(completeGitlabApi);
         
         if (commits != null) {
@@ -72,6 +72,7 @@ public class JobCleanerGitlab {
 
     private void processCommit(JsonNode commitNode) {
         String commitSha = commitNode.get("id").asText();
+
         OffsetDateTime commitDateTime = OffsetDateTime.parse(
                 commitNode.get("committed_date").asText(),
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -83,24 +84,25 @@ public class JobCleanerGitlab {
         }
         JsonNode commitDetails = fetchCommitDetails(commitSha);
         String prevsha=commitNode.get("parent_ids").get(0).asText();
-       // System.out.println("commit details are "+commitDetails);
-        if (commitDetails == null) {
-            System.out.println("Commit details are null");
+       
+        if (commitDetails == null) 
+        {
+            logger.error("Commit details are null");
             return;
         }
         JsonNode Files=commitDetails;
         for(JsonNode file : Files)
         {
-            boolean isRemoved=file.get("deleted_file").asBoolean();
+            boolean deleted=file.get("deleted_file").asBoolean();
             String filename=file.get("new_path").asText();
-            if(isRemoved)
+            if(deleted)
             {
                 
-                gitlabService.processFiles(filename, prevsha, localCommitDateTime, isRemoved);
+                gitlabService.processProperty(filename, prevsha, localCommitDateTime, deleted);
             }
             else
             {
-                 gitlabService.processFiles(filename,commitSha,localCommitDateTime,isRemoved);
+                 gitlabService.processProperty(filename,commitSha,localCommitDateTime,deleted);
             }
             
         }
