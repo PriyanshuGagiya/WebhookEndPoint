@@ -1,10 +1,10 @@
 github:
   token: 
   api:
-    url: https://raw.githubusercontent.com/PriyanshuGagiya/DP/
+    url: https://raw.githubusercontent.com/PriyanshuGagiya/SprinklrProperty/
     time:
-      url: https://api.github.com/repos/PriyanshuGagiya/DP/commits?since=
-    commitdetailsapiurl: https://api.github.com/repos/PriyanshuGagiya/DP/commits/
+      url: https://api.github.com/repos/PriyanshuGagiya/SprinklrProperty/commits?since=
+    commitdetailsapiurl: https://api.github.com/repos/PriyanshuGagiya/SprinklrProperty/commits/
 gitlab:
   token: 
   api:
@@ -12,16 +12,16 @@ gitlab:
     time:
       url: https://gitlab.com/api/v4/projects/59307924/repository/commits?since=
     commitdetailsapiurl: https://gitlab.com/api/v4/projects/59307924/repository/commits/
+
 spring:
   application:
-    name: dynamicproperty
+    name: sprinklrProperty
   profiles:
     active: prod1
 server:
   port: '8080'
 custom:
   mongodb:
-    # url: mongodb+srv://priyanshu:soumik@sprinklr.emlaafp.mongodb.net/?retryWrites=true&w=majority
     url: mongodb://localhost:27017
     database: prod1
 
