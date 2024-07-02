@@ -94,12 +94,17 @@ public class GitlabService {
     public Boolean processProperty(String filePath, String commitId, LocalDateTime commitTime, boolean isRemoved) {
 
         String[] filesPathSplit = filePath.split("/");
+        for(String file:filesPathSplit)
+        {
+            System.out.println(file);
+        }
         if (filesPathSplit.length < 4) 
         {
             if (filesPathSplit.length == 3) 
             {
                 return processGlobalProperty(filesPathSplit, commitId, commitTime, isRemoved);
             }
+            return true;
         }
         String databaseName = filesPathSplit[2];
         if (!databaseName.equals(activeProfile)) {
