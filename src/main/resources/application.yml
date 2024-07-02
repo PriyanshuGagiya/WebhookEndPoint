@@ -1,3 +1,10 @@
+spring:
+  application:
+    name: sprinklrProperty
+  profiles:
+    active: prod3
+
+
 github:
   token: 
   api:
@@ -13,17 +20,41 @@ gitlab:
       url: https://gitlab.com/api/v4/projects/59307924/repository/commits?since=
     commitdetailsapiurl: https://gitlab.com/api/v4/projects/59307924/repository/commits/
 
+---
+# Profile-specific properties for prod1
 spring:
-  application:
-    name: sprinklrProperty
-  profiles:
-    active: prod1
+  config:
+    activate:
+      on-profile: prod1
 server:
-  port: '8080'
+  port: 8080
 custom:
   mongodb:
     url: mongodb://localhost:27017
     database: prod1
 
+---
+# Profile-specific properties for prod2
+spring:
+  config:
+    activate:
+      on-profile: prod2
+server:
+  port: 8081
+custom:
+  mongodb:
+    url: mongodb://localhost:27017
+    database: prod2
 
-
+---
+# Profile-specific properties for prod3
+spring:
+  config:
+    activate:
+      on-profile: prod3
+server:
+  port: 8082
+custom:
+  mongodb:
+    url: mongodb://localhost:27017
+    database: prod3
