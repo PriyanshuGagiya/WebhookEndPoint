@@ -209,7 +209,7 @@ public class JobCleanerGithub {
 
     private void setprev(LocalDateTime prev)
     {
-        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
         Query query = new Query();
         query.addCriteria(Criteria.where("key").is(activeProfile));
         Update update = new Update();
@@ -218,7 +218,7 @@ public class JobCleanerGithub {
     }
     private Boolean containsCommit(String commitSha)
     {
-        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
         Query query = new Query();
         Criteria criteria = new Criteria();
         criteria.andOperator(Criteria.where("key").is(activeProfile));
@@ -236,7 +236,7 @@ public class JobCleanerGithub {
     private void removeCommit(String commitSha)
     {
        
-        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
         Query query = new Query();
         Criteria criteria = new Criteria();
         criteria.andOperator(Criteria.where("key").is(activeProfile));
@@ -247,7 +247,7 @@ public class JobCleanerGithub {
     }
     private LocalDateTime getprev()
     {
-        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
         Query query = new Query();
         query.addCriteria(Criteria.where("key").is(activeProfile));
         Update update = new Update();

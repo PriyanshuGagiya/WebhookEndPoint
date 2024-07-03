@@ -336,7 +336,7 @@ public class GithubService {
         return map;
     }
     public void add(String commitId) {
-       MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+       MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
        Query query = new Query();
        query.addCriteria(Criteria.where("key").is(activeProfile));
        Update update = new Update();
