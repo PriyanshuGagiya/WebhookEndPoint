@@ -25,4 +25,13 @@ public class MongoConfig {
         return new MongoTemplate(MongoClients.create(mongoClientSettings), dbName); 
     }
 
+    public MongoTemplate getMongoTemplateForDatabase(String databaseName) {
+        ConnectionString connectionString = new ConnectionString(mongoUrl);
+        MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                .build();
+
+        return new MongoTemplate(MongoClients.create(mongoClientSettings), databaseName);
+    }
+
 }

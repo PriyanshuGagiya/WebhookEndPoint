@@ -1,14 +1,22 @@
 package com.webhook.dynamicproperty.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.webhook.dynamicproperty.config.MongoConfig;
 import com.webhook.dynamicproperty.model.DynamicPropertyDetails;
 import com.webhook.dynamicproperty.model.PartnerLevelConfigBeanDetails;
 import com.webhook.dynamicproperty.model.ServerConfigDetails;
 import com.webhook.dynamicproperty.model.SprPropertyDetails;
+import com.webhook.dynamicproperty.model.TimeandCommit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -32,7 +40,9 @@ public class GithubService {
     @Autowired
     private PropertyService propertyService;
 
-    private HashSet<String> commitProcessed = new HashSet<String>();
+    @Autowired
+    private MongoConfig mongoConfig;
+   
     @Autowired
     private RestTemplate restTemplate;
 
@@ -86,7 +96,7 @@ public class GithubService {
                     }
                 }
 
-                commitProcessed.add(commitId);
+                add(commitId);
             }
         } catch (Exception e) {
             logger.error("Error processing GitHub webhook payload", e);
@@ -325,12 +335,18 @@ public class GithubService {
         });
         return map;
     }
-
-    public boolean containsCommit(String commitId) {
-        return commitProcessed.contains(commitId);
+    public void add(String commitId) {
+       MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+       Query query = new Query();
+       query.addCriteria(Criteria.where("key").is(activeProfile));
+       Update update = new Update();
+       update.setOnInsert("key", activeProfile);
+       HashSet<String> commitProcessed = new HashSet<>();
+       commitProcessed.add(commitId);
+       update.setOnInsert("dateTime", LocalDateTime.now());
+       update.addToSet("commitProcessed", commitId);
+       mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().upsert(true), TimeandCommit.class);
+       
     }
-
-    public void removeCommit(String commitId) {
-        commitProcessed.remove(commitId);
-    }
+    
 }

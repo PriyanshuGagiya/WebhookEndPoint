@@ -1,6 +1,7 @@
 package com.webhook.dynamicproperty.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.webhook.dynamicproperty.model.TimeandCommit;
 import com.webhook.dynamicproperty.service.GithubService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -31,6 +37,9 @@ public class JobCleanerGithub {
 
     private static final Logger logger = LoggerFactory.getLogger(JobCleanerGithub.class);
 
+    @Value("${spring.profiles.active}")
+    private String activeProfile;
+
     @Value("${github.token}")
     private String githubToken;
 
@@ -45,18 +54,24 @@ public class JobCleanerGithub {
     @Autowired
     private GithubService githubService;
     private LocalDateTime prev;
+    private final MongoConfig mongoConfig;
 
-    public JobCleanerGithub() {
-        prev = LocalDateTime.now(ZoneOffset.UTC);
+    
+    public JobCleanerGithub(MongoConfig mongoConfig) {
+        this.mongoConfig = mongoConfig;
     }
-
-    @Scheduled(fixedRate = 60*60*1000)
-    public void robustnessCheck() {
+    
+    @Scheduled(fixedRate = 20*1000)
+    public void robustnessCheck() 
+    {
+        prev=getprev();
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         String formattedPrev = formatDateTime(prev);
         String formattedNow = formatDateTime(now);
         String completeGithubApi = githubApi + formattedPrev + "&until=" + formattedNow + "&sha=main";
+
         logger.info("Fetching commits from {} to {}", formattedPrev, formattedNow);
+
         List<JsonNode> commits = fetchCommits(completeGithubApi);
 
         if (commits != null) {
@@ -65,7 +80,7 @@ public class JobCleanerGithub {
             }
         }
 
-        prev = now;
+        setprev(now);
     }
 
     private void processCommit(JsonNode commitNode) {
@@ -76,12 +91,15 @@ public class JobCleanerGithub {
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         LocalDateTime localCommitDateTime = commitDateTime.toLocalDateTime().plusHours(5).plusMinutes(30);
 
-        if (githubService.containsCommit(commitSha)) {
-            githubService.removeCommit(commitSha);
+
+        if (containsCommit(commitSha)) {
+            
+            removeCommit(commitSha);
             return;
         }
-
+        
         JsonNode commitDetails = fetchCommitDetails(commitSha);
+        
         if (commitDetails == null) {
            logger.error("Error fetching commit details for {}", commitSha);
             return;
@@ -187,5 +205,56 @@ public class JobCleanerGithub {
 
     private String formatDateTime(LocalDateTime dateTime) {
         return dateTime.toString() + "Z";
+    }
+
+    private void setprev(LocalDateTime prev)
+    {
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        Query query = new Query();
+        query.addCriteria(Criteria.where("key").is(activeProfile));
+        Update update = new Update();
+        update.set("dateTime", prev);
+        mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().returnNew(true).upsert(true), TimeandCommit.class);
+    }
+    private Boolean containsCommit(String commitSha)
+    {
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        criteria.andOperator(Criteria.where("key").is(activeProfile));
+        TimeandCommit timeandCommit = mongoTemplate.findOne(query, TimeandCommit.class);
+        if(timeandCommit==null)
+        {
+            return false;
+        }
+        if(timeandCommit.getCommitProcessed()!=null && timeandCommit.getCommitProcessed().contains(commitSha))
+        {
+            return true;
+        }
+        return false;
+    }
+    private void removeCommit(String commitSha)
+    {
+       
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        criteria.andOperator(Criteria.where("key").is(activeProfile));
+        query.addCriteria(criteria);
+        Update update = new Update();
+        update.pull("commitProcessed", commitSha);
+        mongoTemplate.findAndModify(query, update, TimeandCommit.class);
+    }
+    private LocalDateTime getprev()
+    {
+        MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommit");
+        Query query = new Query();
+        query.addCriteria(Criteria.where("key").is(activeProfile));
+        Update update = new Update();
+        update.setOnInsert("key", activeProfile);
+        update.setOnInsert("dateTime", LocalDateTime.now(ZoneOffset.UTC));
+        System.out.println("LocalDateTime.now(ZoneOffset.UTC)"+LocalDateTime.now(ZoneOffset.UTC));
+        TimeandCommit timeandCommit = mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().returnNew(true).upsert(true), TimeandCommit.class);
+        return timeandCommit.getDateTime();
     }
 }
