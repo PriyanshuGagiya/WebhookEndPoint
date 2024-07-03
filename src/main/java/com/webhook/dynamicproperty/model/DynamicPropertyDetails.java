@@ -53,7 +53,7 @@ public class DynamicPropertyDetails implements SprinklrProperty
         update.set("value", value);
         update.set("reason", reason);
         update.set("deleted", deleted);
-        update.set("modifiedDate", modifiedDateTime);
+        update.set("modifiedDateTime", modifiedDateTime);
         return update;
     }
 
