@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.mongodb.core.query.Query;
@@ -127,18 +128,42 @@ public class JobCleanerGitlab {
         headers.setBearerAuth(gitlabToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
+        List<JsonNode> allCommits = new ArrayList<>();
         try {
-            ResponseEntity<List<JsonNode>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<List<JsonNode>>() {});
+            while (url != null) {
+                ResponseEntity<List<JsonNode>> response = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        entity,
+                        new ParameterizedTypeReference<List<JsonNode>>() {});
 
-            return response.getBody();
+                if (response.getBody() != null) {
+                    allCommits.addAll(response.getBody());
+                }
+                
+                url = getNextPageUrl(response.getHeaders());
+            }
         } catch (Exception e) {
-            logger.error("Error fetching commits from Gitlab API: {}", e.getMessage());
-            return null;
+            logger.error("Error fetching commits from GitLab API: {}", e.getMessage());
         }
+
+        return allCommits;
+    }
+
+    private String getNextPageUrl(HttpHeaders headers) {
+        List<String> linkHeaders = headers.get("Link");
+        if (linkHeaders != null && !linkHeaders.isEmpty()) {
+            for (String linkHeader : linkHeaders) {
+                String[] links = linkHeader.split(",");
+                for (String link : links) {
+                    String[] parts = link.split(";");
+                    if (parts.length > 1 && parts[1].contains("rel=\"next\"")) {
+                        return parts[0].trim().replaceAll("<|>", "");
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private JsonNode fetchCommitDetails(String sha) {

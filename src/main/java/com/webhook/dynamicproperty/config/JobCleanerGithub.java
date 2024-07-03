@@ -61,7 +61,7 @@ public class JobCleanerGithub {
         this.mongoConfig = mongoConfig;
     }
     
-    @Scheduled(fixedRate = 20*1000)
+    @Scheduled(fixedRate = 25*1000)
     public void robustnessCheck() 
     {
         prev=getprev();
