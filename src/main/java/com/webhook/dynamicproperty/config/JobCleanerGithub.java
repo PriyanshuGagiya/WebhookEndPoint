@@ -61,7 +61,7 @@ public class JobCleanerGithub {
         this.mongoConfig = mongoConfig;
     }
     
-    @Scheduled(fixedRate = 25*1000)
+    @Scheduled(fixedRate = 60*1000)
     public void robustnessCheck() 
     {
         prev=getprev();
@@ -220,9 +220,10 @@ public class JobCleanerGithub {
     {
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
         Query query = new Query();
-        Criteria criteria = new Criteria();
-        criteria.andOperator(Criteria.where("key").is(activeProfile));
+        System.out.println("activeProfile"+activeProfile);
+        query.addCriteria(Criteria.where("key").is(activeProfile));
         TimeandCommit timeandCommit = mongoTemplate.findOne(query, TimeandCommit.class);
+        System.out.println("timeandCommit"+timeandCommit);
         if(timeandCommit==null)
         {
             return false;
@@ -238,9 +239,7 @@ public class JobCleanerGithub {
        
         MongoTemplate mongoTemplate = mongoConfig.getMongoTemplateForDatabase("timeAndCommitGithub");
         Query query = new Query();
-        Criteria criteria = new Criteria();
-        criteria.andOperator(Criteria.where("key").is(activeProfile));
-        query.addCriteria(criteria);
+        query.addCriteria(Criteria.where("key").is(activeProfile));
         Update update = new Update();
         update.pull("commitProcessed", commitSha);
         mongoTemplate.findAndModify(query, update, TimeandCommit.class);
@@ -253,7 +252,6 @@ public class JobCleanerGithub {
         Update update = new Update();
         update.setOnInsert("key", activeProfile);
         update.setOnInsert("dateTime", LocalDateTime.now(ZoneOffset.UTC));
-        System.out.println("LocalDateTime.now(ZoneOffset.UTC)"+LocalDateTime.now(ZoneOffset.UTC));
         TimeandCommit timeandCommit = mongoTemplate.findAndModify(query, update, new FindAndModifyOptions().returnNew(true).upsert(true), TimeandCommit.class);
         return timeandCommit.getDateTime();
     }
